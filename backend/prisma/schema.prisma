@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────────────────────────
+// TENANT / ORGANIZATION (Multi-tenancy core)
+// ───────────────────────────────────────────────
+model Tenant {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  email         String
+  phone         String?
+  address       String?
+  logoUrl       String?
+  businessType  String    @default("SUPERMARKET") // SUPERMARKET, PHARMACY, MINI_STORE, etc.
+  status        String    @default("ACTIVE")       // ACTIVE, SUSPENDED, TRIAL, CANCELLED
+  trialEndsAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  users         User[]
+  products      Product[]
+  sales         Sale[]
+  restocks      Restock[]
+  settings      TenantSetting?
+  subscription  Subscription?
+  payments      Payment[]
+  momoConfigs   MomoConfig?
+
+  @@index([slug])
+  @@index([status])
+  @@index([businessType])
+}
+
+// ───────────────────────────────────────────────
+// SUBSCRIPTION & BILLING
+// ───────────────────────────────────────────────
+model Subscription {
+  id              String    @id @default(cuid())
+  tenantId        String    @unique
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  plan            String    @default("STARTER")     // STARTER, BASIC, PRO, ENTERPRISE
+  status          String    @default("TRIAL")      // TRIAL, ACTIVE, PAST_DUE, CANCELLED, EXPIRED
+
+  priceMonthly    Float     @default(0)
+  priceYearly     Float     @default(0)
+  billingCycle    String    @default("MONTHLY")     // MONTHLY, YEARLY
+
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime?
+
+  paystackSubCode String?   // Paystack subscription code
+  paystackEmailToken String? // For cancelling via Paystack
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+  @@index([tenantId])
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  amount        Float
+  currency      String    @default("GHS")
+  status        String    @default("PENDING")      // PENDING, SUCCESS, FAILED, REFUNDED
+  method        String    @default("PAYSTACK")     // PAYSTACK, MTN_MOMO, MANUAL
+
+  paystackRef   String?   // Paystack transaction reference
+  momoTransId   String?   // MoMo transaction ID
+
+  description   String?
+  metadata      Json?     // Store extra payment details
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([paystackRef])
+}
+
+// ───────────────────────────────────────────────
+// MTN MoMo CONFIGURATION (Per tenant)
+// ───────────────────────────────────────────────
+model MomoConfig {
+  id              String    @id @default(cuid())
+  tenantId        String    @unique
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // MTN MoMo API credentials (sandbox vs production)
+  environment     String    @default("SANDBOX")   // SANDBOX, PRODUCTION
+  apiUser         String?
+  apiKey          String?   // Encrypted at application level
+  subscriptionKey String?   // OCP-Apim-Subscription-Key
+
+  // Callback URLs (configured in MTN developer portal)
+  callbackUrl     String?
+
+  // Wallet / Collection account
+  targetEnvironment String  @default("sandbox")
+  currency        String    @default("EUR")       // Sandbox uses EUR, prod uses GHS
+
+  isActive        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ───────────────────────────────────────────────
+// USERS (Now scoped to tenant)
+// ───────────────────────────────────────────────
+model User {
+  id        Int      @id @default(autoincrement())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  pin       String
+  role      String   @default("CASHIER")          // ADMIN, MANAGER, CASHIER
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([role])
+  @@index([isActive])
+}
+
+// ───────────────────────────────────────────────
+// PRODUCTS (Scoped to tenant)
+// ───────────────────────────────────────────────
+model Product {
+  id        Int        @id @default(autoincrement())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  price     Float
+  stock     Int        @default(0)
+  costPrice Float      @default(0)
+  barcode   String?
+  category  String     @default("General")
+  deleted   Boolean    @default(false)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  restocks  Restock[]
+  saleItems SaleItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, deleted])
+  @@index([tenantId, stock])
+  @@index([tenantId, category])
+}
+
+// ───────────────────────────────────────────────
+// RESTOCKS
+// ───────────────────────────────────────────────
+model Restock {
+  id        Int      @id @default(autoincrement())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  quantity  Int
+  supplier  String?
+  costPrice Float    @default(0)
+  createdAt DateTime @default(now())
+
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productId])
+  @@index([tenantId, createdAt])
+}
+
+// ───────────────────────────────────────────────
+// SALES
+// ───────────────────────────────────────────────
+model Sale {
+  id            Int        @id @default(autoincrement())
+  tenantId      String
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  total         Float
+  paymentMethod String     @default("Cash")
+
+  // MoMo-specific fields
+  momoPhone     String?    // Customer phone for MoMo payment
+  momoStatus    String?    @default("PENDING")   // PENDING, SUCCESS, FAILED, CANCELLED
+  momoTransId   String?
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  cashierId     Int?
+  cashier       User?      @relation(fields: [cashierId], references: [id])
+  items         SaleItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, paymentMethod])
+  @@index([cashierId])
+  @@index([momoStatus])
+}
+
+model SaleItem {
+  id        Int     @id @default(autoincrement())
+  saleId    Int
+  productId Int
+  quantity  Int
+  price     Float   // Price at time of sale
+
+  product   Product @relation(fields: [productId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+// ───────────────────────────────────────────────
+// TENANT SETTINGS (Replaces global Settings)
+// ───────────────────────────────────────────────
+model TenantSetting {
+  id                Int      @id @default(autoincrement())
+  tenantId          String   @unique
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  shopName          String   @default("WAG POS")
+  currency          String   @default("GHS")
+  receiptFooter     String   @default("Thank you for your purchase!")
+  receiptHeader     String?
+  taxRate           Float    @default(0)
+  lowStockThreshold Int      @default(10)
+
+  // Feature flags
+  enableMomo        Boolean  @default(false)
+  enableCard        Boolean  @default(false)
+  enableCreditSales Boolean  @default(false)
+
+  updatedAt         DateTime @updatedAt
+}

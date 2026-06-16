@@ -13,9 +13,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
-  	uses: actions/setup-node@v4
-  	with:
-    	node-version: '20'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Install Backend Dependencies
         working-directory: ./backend
@@ -63,10 +63,3 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/wag-pos-web:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # Uncomment for Render deployment
-      # - name: Deploy to Render
-      #   uses: johnbeynon/render-deploy-action@v0.0.8
-      #   with:
-      #     service-id: ${{ secrets.RENDER_SERVICE_ID }}
-      #     api-key: ${{ secrets.RENDER_API_KEY }}

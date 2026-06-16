@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: wag-pos-api
+    runtime: docker
+    repo: https://github.com/gistprintgh97-sketch/wag-pos
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wag-pos-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://wag-pos-web.onrender.com
+
+  - type: web
+    name: wag-pos-web
+    runtime: docker
+    repo: https://github.com/gistprintgh97-sketch/wag-pos
+    dockerfilePath: ./frontend/Dockerfile
+    envVars:
+      - key: VITE_API_URL
+        value: https://wag-pos-api.onrender.com/api
+
+databases:
+  - name: wag-pos-db
+    databaseName: wagpos
+    user: wagpos
+    plan: free

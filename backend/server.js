@@ -14,80 +14,119 @@ const app = express();
 // Database initialization endpoint
 app.get('/api/init', async (req, res) => {
   try {
-    const existing = await prisma.tenant.findUnique({
+    // Check if demo tenant exists
+    let tenant = await prisma.tenant.findUnique({
       where: { slug: 'demo' }
     });
 
-    if (existing) {
-      return res.json({ 
+    // If tenant doesn't exist, create it
+    if (!tenant) {
+      tenant = await prisma.tenant.create({
+        data: {
+          name: 'Demo Supermarket',
+          slug: 'demo',
+          email: 'demo@wagpos.com',
+          phone: '+233 20 123 4567',
+          businessType: 'SUPERMARKET',
+          status: 'ACTIVE',
+        }
+      });
+
+      // Create subscription
+      await prisma.subscription.create({
+        data: {
+          tenantId: tenant.id,
+          plan: 'PRO',
+          status: 'ACTIVE',
+          priceMonthly: 99,
+          priceYearly: 999,
+          billingCycle: 'MONTHLY',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+      });
+
+      // Create settings
+      await prisma.tenantSetting.create({
+        data: {
+          tenantId: tenant.id,
+          shopName: 'Demo Supermarket',
+          currency: 'GHS',
+          receiptFooter: 'Thank you for shopping with us!',
+          lowStockThreshold: 10,
+          enableMomo: true,
+          enableCard: true
+        }
+      });
+    }
+
+    // Check if users exist - create them if missing
+    const existingUsers = await prisma.user.findMany({
+      where: { tenantId: tenant.id }
+    });
+
+    if (existingUsers.length === 0) {
+      // Create admin user
+      await prisma.user.create({
+        data: {
+          tenantId: tenant.id,
+          name: 'Admin',
+          pin: '1234',
+          role: 'ADMIN'
+        }
+      });
+
+      // Create cashier
+      await prisma.user.create({
+        data: {
+          tenantId: tenant.id,
+          name: 'Cashier',
+          pin: '5678',
+          role: 'CASHIER'
+        }
+      });
+
+      // Create sample products
+      const products = [
+        { name: 'Coca Cola', price: 5.00, costPrice: 3.50, stock: 50, category: 'Beverages' },
+        { name: 'Pepsi', price: 4.50, costPrice: 3.00, stock: 45, category: 'Beverages' },
+        { name: 'Bottle Water', price: 2.00, costPrice: 1.00, stock: 100, category: 'Beverages' },
+        { name: 'Bread', price: 8.00, costPrice: 5.00, stock: 20, category: 'Bakery' },
+        { name: 'Sugar (1kg)', price: 15.00, costPrice: 12.00, stock: 30, category: 'Groceries' },
+        { name: 'Rice (5kg)', price: 45.00, costPrice: 38.00, stock: 25, category: 'Groceries' },
+        { name: 'Cooking Oil (1L)', price: 18.00, costPrice: 15.00, stock: 40, category: 'Groceries' },
+        { name: 'Soap', price: 6.00, costPrice: 4.00, stock: 60, category: 'Household' },
+        { name: 'Toothpaste', price: 12.00, costPrice: 9.00, stock: 35, category: 'Personal Care' },
+        { name: 'Milo (Nestle)', price: 25.00, costPrice: 20.00, stock: 15, category: 'Beverages' },
+        { name: 'Milk (1L)', price: 10.00, costPrice: 8.00, stock: 8, category: 'Dairy' },
+        { name: 'Eggs (crate)', price: 35.00, costPrice: 30.00, stock: 12, category: 'Dairy' }
+      ];
+
+      for (const p of products) {
+        await prisma.product.create({
+          data: { tenantId: tenant.id, ...p }
+        });
+      }
+
+      res.json({
+        status: 'success',
+        message: 'Demo users and products created!',
+        login: { slug: 'demo', pin: '1234' }
+      });
+    } else {
+      res.json({
         status: 'already_initialized',
         message: 'Demo data already exists',
         login: { slug: 'demo', pin: '1234' }
       });
     }
 
-    const tenant = await prisma.tenant.create({
-      data: {
-        name: 'Demo Supermarket',
-        slug: 'demo',
-        email: 'demo@wagpos.com',
-        phone: '+233 20 123 4567',
-        businessType: 'SUPERMARKET',
-        status: 'ACTIVE',
-      }
-    });
-
-    await prisma.subscription.create({
-      data: {
-        tenantId: tenant.id,
-        plan: 'PRO',
-        status: 'ACTIVE',
-        priceMonthly: 99,
-        priceYearly: 999,
-        billingCycle: 'MONTHLY',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      }
-    });
-
-    await prisma.tenantSetting.create({
-      data: {
-        tenantId: tenant.id,
-        shopName: 'Demo Supermarket',
-        currency: 'GHS',
-        receiptFooter: 'Thank you for shopping with us!',
-        lowStockThreshold: 10,
-        enableMomo: true,
-        enableCard: true
-      }
-    });
-
-    await prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        name: 'Admin',
-        pin: '1234',
-        role: 'ADMIN'
-      }
-    });
-
-    await prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        name: 'Cashier',
-        pin: '5678',
-        role: 'CASHIER'
-      }
-    });
-
-    res.json({
-      status: 'success',
-      message: 'Demo data created!',
-      login: { slug: 'demo', pin: '1234' }
-    });
-
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    console.error('Init error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 });
 // ─── SECURITY MIDDLEWARE ───────────────────────

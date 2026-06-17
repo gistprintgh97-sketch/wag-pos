@@ -29,4 +29,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 USER nodejs
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npx prisma db seed && node server.js"]

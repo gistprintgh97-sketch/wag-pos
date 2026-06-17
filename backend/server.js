@@ -11,6 +11,85 @@ const { handlePaystackWebhook } = require("./services/webhooks");
 const prisma = new PrismaClient();
 const app = express();
 
+// Database initialization endpoint
+app.get('/api/init', async (req, res) => {
+  try {
+    const existing = await prisma.tenant.findUnique({
+      where: { slug: 'demo' }
+    });
+
+    if (existing) {
+      return res.json({ 
+        status: 'already_initialized',
+        message: 'Demo data already exists',
+        login: { slug: 'demo', pin: '1234' }
+      });
+    }
+
+    const tenant = await prisma.tenant.create({
+      data: {
+        name: 'Demo Supermarket',
+        slug: 'demo',
+        email: 'demo@wagpos.com',
+        phone: '+233 20 123 4567',
+        businessType: 'SUPERMARKET',
+        status: 'ACTIVE',
+      }
+    });
+
+    await prisma.subscription.create({
+      data: {
+        tenantId: tenant.id,
+        plan: 'PRO',
+        status: 'ACTIVE',
+        priceMonthly: 99,
+        priceYearly: 999,
+        billingCycle: 'MONTHLY',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    await prisma.tenantSetting.create({
+      data: {
+        tenantId: tenant.id,
+        shopName: 'Demo Supermarket',
+        currency: 'GHS',
+        receiptFooter: 'Thank you for shopping with us!',
+        lowStockThreshold: 10,
+        enableMomo: true,
+        enableCard: true
+      }
+    });
+
+    await prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Admin',
+        pin: '1234',
+        role: 'ADMIN'
+      }
+    });
+
+    await prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Cashier',
+        pin: '5678',
+        role: 'CASHIER'
+      }
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Demo data created!',
+      login: { slug: 'demo', pin: '1234' }
+    });
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
 // ─── SECURITY MIDDLEWARE ───────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }

@@ -11,28 +11,26 @@ const { handlePaystackWebhook } = require("./services/webhooks");
 const prisma = new PrismaClient();
 const app = express();
 
-// Database initialization endpoint
-app.get('/api/init', async (req, res) => {
+app.post("/api/tenants/init-demo", async (req, res) => {
   try {
-    // Check if demo tenant exists
     let tenant = await prisma.tenant.findUnique({
       where: { slug: 'demo' }
     });
 
-    // If tenant doesn't exist, create it
     if (!tenant) {
       tenant = await prisma.tenant.create({
         data: {
-          name: 'Demo Supermarket',
           slug: 'demo',
-          email: 'demo@wagpos.com',
-          phone: '+233 20 123 4567',
-          businessType: 'SUPERMARKET',
-          status: 'ACTIVE',
+          name: 'Demo Supermarket'
         }
       });
+    }
 
-      // Create subscription
+    const existingSubscription = await prisma.subscription.findFirst({
+      where: { tenantId: tenant.id }
+    });
+
+    if (!existingSubscription) {
       await prisma.subscription.create({
         data: {
           tenantId: tenant.id,
@@ -45,8 +43,13 @@ app.get('/api/init', async (req, res) => {
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         }
       });
+    }
 
-      // Create settings
+    const existingSettings = await prisma.tenantSetting.findFirst({
+      where: { tenantId: tenant.id }
+    });
+
+    if (!existingSettings) {
       await prisma.tenantSetting.create({
         data: {
           tenantId: tenant.id,
@@ -60,13 +63,11 @@ app.get('/api/init', async (req, res) => {
       });
     }
 
-    // Check if users exist - create them if missing
     const existingUsers = await prisma.user.findMany({
       where: { tenantId: tenant.id }
     });
 
     if (existingUsers.length === 0) {
-      // Create admin user
       await prisma.user.create({
         data: {
           tenantId: tenant.id,
@@ -76,7 +77,6 @@ app.get('/api/init', async (req, res) => {
         }
       });
 
-      // Create cashier
       await prisma.user.create({
         data: {
           tenantId: tenant.id,
@@ -86,7 +86,6 @@ app.get('/api/init', async (req, res) => {
         }
       });
 
-      // Create sample products
       const products = [
         { name: 'Coca Cola', price: 5.00, costPrice: 3.50, stock: 50, category: 'Beverages' },
         { name: 'Pepsi', price: 4.50, costPrice: 3.00, stock: 45, category: 'Beverages' },
@@ -120,7 +119,6 @@ app.get('/api/init', async (req, res) => {
         login: { slug: 'demo', pin: '1234' }
       });
     }
-
   } catch (error) {
     console.error('Init error:', error);
     res.status(500).json({

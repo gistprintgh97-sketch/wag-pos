@@ -135,18 +135,22 @@ app.use(helmet({
 app.use(compression());
 
 // CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
-  "http://localhost:8080",
-  "http://localhost:5173"
+const allowedOrigins = [
+  "https://wag-pos-web.onrender.com",
+  // Add your custom domain later:
+  // "https://app.wagpos.com.gh",
+  // "https://www.wagpos.com.gh"
 ];
 
 app.use(cors({
-  origin: [
-    'http://localhost:8081',
-    'http://localhost:3001',
-    'http://localhost:8080',
-    'https://wag-pos-web.onrender.com'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error("Not allowed by CORS"));
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug', 'x-super-admin-key']

@@ -178,7 +178,14 @@ app.post("/webhooks/paystack", handlePaystackWebhook);
 
 // JSON parser for all other routes
 app.use(express.json({ limit: "10mb" }));
-
+// Request logging for security monitoring
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  console.log(`[SECURITY] ${timestamp} | ${req.method} ${req.path} | IP: ${ip} | UA: ${userAgent.substring(0, 50)}`);
+  next();
+});
 // ─── HEALTH CHECK ──────────────────────────────
 app.get("/health", async (req, res) => {
   try {

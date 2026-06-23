@@ -15,6 +15,7 @@ import Billing from "./pages/Billing";
 import MoMoConfig from "./pages/MoMoConfig";
 import PaystackCallback from "./pages/PaystackCallback";
 import SuperAdmin from "./pages/SuperAdmin";
+import LandingPage from './pages/LandingPage';
 
 function ProtectedRoute({ children, requireAdmin = false }) {
   const { isAuthenticated, user, loading } = useAuth();
@@ -35,7 +36,9 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/billing/callback" element={<PaystackCallback />} />
         <Route path="/super-admin" element={<SuperAdmin />} />
-
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        
         {/* Protected */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />

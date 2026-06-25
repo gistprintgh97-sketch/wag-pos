@@ -15,6 +15,7 @@ import Billing from "./pages/Billing";
 import MoMoConfig from "./pages/MoMoConfig";
 import PaystackCallback from "./pages/PaystackCallback";
 import SuperAdmin from "./pages/SuperAdmin";
+import WhatsAppSupport from "./components/WhatsAppSupport";
 
 
 function ProtectedRoute({ children, requireAdmin = false }) {

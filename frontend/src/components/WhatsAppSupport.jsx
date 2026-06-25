@@ -1,12 +1,10 @@
 import React, { useState } from "react";
-import { MessageCircle, X, Phone, Clock, CheckCircle } from "lucide-react";
 
 export default function WhatsAppSupport() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const supportNumber = "+233599775362"; // Your WhatsApp number
+  const supportNumber = "+233599775362";
   const supportName = "WAG POS Support";
-  const supportStatus = "Typically replies in minutes";
 
   const handleChatClick = () => {
     const message = encodeURIComponent(
@@ -19,118 +17,187 @@ export default function WhatsAppSupport() {
   };
 
   return (
-    <>
+    <div style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 9999 }}>
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 ${
-          isOpen
-            ? "bg-red-500 hover:bg-red-600"
-            : "bg-green-500 hover:bg-green-600"
-        }`}
-        style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}
+        style={{
+          width: "60px",
+          height: "60px",
+          borderRadius: "50%",
+          background: isOpen ? "#ef4444" : "#22c55e",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "24px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          transition: "all 0.3s",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        onMouseEnter={(e) => e.target.style.transform = "scale(1.1)"}
+        onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
       >
-        {isOpen ? (
-          <X className="w-6 h-6 text-white" />
-        ) : (
-          <MessageCircle className="w-7 h-7 text-white" />
-        )}
+        {isOpen ? "✕" : "💬"}
       </button>
 
       {/* Chat Popup */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-2xl shadow-2xl overflow-hidden"
           style={{
+            position: "absolute",
+            bottom: "70px",
+            right: "0",
+            width: "300px",
+            background: "white",
+            borderRadius: "16px",
             boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
+            overflow: "hidden",
             animation: "slideUp 0.3s ease-out",
           }}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 p-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+          <div
+            style={{
+              background: "linear-gradient(135deg, #22c55e, #16a34a)",
+              padding: "16px",
+              color: "white",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  background: "white",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "24px",
+                }}
+              >
+                📱
               </div>
               <div>
-                <h3 className="text-white font-bold text-lg">{supportName}</h3>
-                <div className="flex items-center gap-1 text-green-100 text-sm">
-                  <Clock className="w-3 h-3" />
-                  <span>{supportStatus}</span>
-                </div>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "bold" }}>
+                  {supportName}
+                </h3>
+                <p style={{ margin: 0, fontSize: "12px", opacity: 0.9 }}>
+                  🟢 Typically replies in minutes
+                </p>
               </div>
             </div>
           </div>
 
           {/* Body */}
-          <div className="p-4 bg-gray-50">
-            <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
-              <p className="text-gray-700 text-sm leading-relaxed">
+          <div style={{ padding: "16px", background: "#f8fafc" }}>
+            <div
+              style={{
+                background: "white",
+                borderRadius: "12px",
+                padding: "12px",
+                marginBottom: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "14px", color: "#374151" }}>
                 Hello! 👋 Welcome to <strong>WAG POS</strong>. How can we help you today?
               </p>
             </div>
 
-            <div className="space-y-2 mb-4">
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Account setup & login issues</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Payment & MoMo problems</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Product & inventory help</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Subscription & billing</span>
-              </div>
+            <div style={{ marginBottom: "12px" }}>
+              {[
+                "Account setup & login issues",
+                "Payment & MoMo problems",
+                "Product & inventory help",
+                "Subscription & billing",
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "13px",
+                    color: "#6b7280",
+                    padding: "4px 0",
+                  }}
+                >
+                  <span style={{ color: "#22c55e" }}>✓</span>
+                  {item}
+                </div>
+              ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            {/* Buttons */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               <button
                 onClick={handleChatClick}
-                className="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1"
+                style={{
+                  background: "#22c55e",
+                  color: "white",
+                  border: "none",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  transition: "background 0.3s",
+                }}
+                onMouseEnter={(e) => (e.target.style.background = "#16a34a")}
+                onMouseLeave={(e) => (e.target.style.background = "#22c55e")}
               >
-                <MessageCircle className="w-4 h-4" />
-                Chat on WhatsApp
+                💬 Chat on WhatsApp
               </button>
               <a
                 href={`tel:${supportNumber}`}
-                className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1"
+                style={{
+                  background: "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "background 0.3s",
+                }}
+                onMouseEnter={(e) => (e.target.style.background = "#2563eb")}
+                onMouseLeave={(e) => (e.target.style.background = "#3b82f6")}
               >
-                <Phone className="w-4 h-4" />
-                Call Us
+                📞 Call Us
               </a>
             </div>
 
-            {/* Footer */}
-            <div className="text-center text-xs text-gray-400 pt-2 border-t">
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "11px",
+                color: "#9ca3af",
+                marginTop: "12px",
+                paddingTop: "8px",
+                borderTop: "1px solid #e5e7eb",
+              }}
+            >
               Powered by WAG POS • Ghana
-            </div>
+            </p>
           </div>
         </div>
       )}
 
-      {/* Animation styles */}
       <style>{`
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-    </>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+// frontend/src/pages/Dashboard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -102,7 +103,7 @@ export default function Dashboard() {
   if (loading) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Trial Banner */}
       {isTrial && (
         <div className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-4 text-white">
@@ -131,9 +132,9 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-pos-dark">{tenant?.name || "Dashboard"}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Logged in as: <span className="font-semibold text-pos-blue">{user?.name}</span>
+          <h1 className="text-3xl font-bold text-slate-800">{tenant?.name || "Dashboard"}</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Logged in as: <span className="font-semibold text-blue-600">{user?.name}</span>
             {user?.role === "ADMIN" && (
               <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
                 <Crown size={10} /> Admin
@@ -145,7 +146,7 @@ export default function Dashboard() {
           {user?.role === "ADMIN" && (
             <button
               onClick={() => navigate("/products")}
-              className="btn-primary flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               <Plus size={18} />
               Add Product
@@ -153,7 +154,7 @@ export default function Dashboard() {
           )}
           <button
             onClick={handleShowSalesHistory}
-            className="bg-pos-dark hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <History size={18} />
             Sales History
@@ -166,13 +167,13 @@ export default function Dashboard() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.title} className="card flex items-center gap-4 dark:bg-slate-800 dark:border-slate-700">
+            <div key={stat.title} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
               <div className={`w-14 h-14 ${stat.bgColor} rounded-2xl flex items-center justify-center ${stat.textColor}`}>
                 <Icon size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-500 font-medium dark:text-slate-400">{stat.title}</p>
-                <p className="text-2xl font-bold text-pos-dark mt-0.5 dark:text-white">{stat.value}</p>
+                <p className="text-sm text-slate-500 font-medium">{stat.title}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-0.5">{stat.value}</p>
                 <p className={`text-xs font-medium ${stat.textColor} mt-1`}>{stat.subtitle}</p>
               </div>
             </div>
@@ -194,16 +195,17 @@ export default function Dashboard() {
       )}
 
       {/* Search */}
-      <div className="card flex items-center gap-3 dark:bg-slate-800 dark:border-slate-700">
-      <Search size={20} className="text-gray-400 dark:text-slate-500" />
-      <input
-      type="text"
-      placeholder="Search products..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="flex-1 outline-none text-gray-700 placeholder-gray-400 dark:text-slate-100 dark:placeholder-slate-500 bg-transparent"
-  />
-</div>
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+        <Search size={20} className="text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 outline-none text-slate-700 placeholder-slate-400 bg-transparent"
+        />
+      </div>
+
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredProducts.map((product) => (
@@ -212,14 +214,14 @@ export default function Dashboard() {
       </div>
 
       {filteredProducts.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-slate-400">
           <Package size={48} className="mx-auto mb-3 opacity-50" />
           <p>No products found</p>
         </div>
       )}
 
       {/* Footer */}
-      <div className="text-center text-sm text-gray-400 dark:text-slate-500 pt-4">
+      <div className="text-center text-sm text-slate-400 pt-4">
         © 2025 WAG POS System. All rights reserved.
       </div>
 
@@ -245,19 +247,19 @@ function ProductCard({ product, onUpdate }) {
   const isLowStock = product.stock <= 10;
 
   return (
-    <div className="card p-5 text-center hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700">
-  <div className="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-gray-500 dark:text-slate-300 font-bold text-xl">
-    {product.name.substring(0, 2).toUpperCase()}
-  </div>
-  <h3 className="font-bold text-pos-dark dark:text-white mb-1">{product.name}</h3>
-  <p className="text-xl font-bold text-primary-600 mb-1">GHS {product.price.toFixed(2)}</p>
-  <p className={`text-sm font-medium mb-4 ${isLowStock ? "text-red-500" : "text-gray-500 dark:text-slate-400"}`}>
-    Stock: {product.stock}
-  </p>
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center hover:shadow-md transition-shadow">
+      <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-500 font-bold text-xl">
+        {product.name.substring(0, 2).toUpperCase()}
+      </div>
+      <h3 className="font-bold text-slate-800 mb-1">{product.name}</h3>
+      <p className="text-xl font-bold text-blue-600 mb-1">GHS {product.price.toFixed(2)}</p>
+      <p className={`text-sm font-medium mb-4 ${isLowStock ? "text-red-500" : "text-slate-500"}`}>
+        Stock: {product.stock}
+      </p>
       <div className="space-y-2">
         <button
           onClick={() => navigate("/sales")}
-          className="btn-success w-full py-2.5 text-sm flex items-center justify-center gap-2"
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
         >
           <ShoppingCart size={16} />
           Add to Cart
@@ -266,14 +268,14 @@ function ProductCard({ product, onUpdate }) {
         {user?.role === "ADMIN" && (
           <button
             onClick={() => setShowActions(!showActions)}
-            className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 font-medium"
+            className="w-full py-2 text-sm text-slate-500 hover:text-slate-700 font-medium"
           >
             {showActions ? "Hide Actions" : "Manage"}
           </button>
         )}
 
         {showActions && user?.role === "ADMIN" && (
-          <div className="space-y-2 pt-2 border-t border-gray-100">
+          <div className="space-y-2 pt-2 border-t border-slate-100">
             <button
               onClick={() => navigate("/products")}
               className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors"
@@ -304,7 +306,7 @@ function ProductCard({ product, onUpdate }) {
 function SalesHistoryTable({ sales }) {
   if (sales.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8 text-slate-400">
         <History size={40} className="mx-auto mb-2" />
         <p>No sales recorded yet</p>
       </div>
@@ -315,18 +317,18 @@ function SalesHistoryTable({ sales }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">ID</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Amount</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Payment</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Date</th>
+          <tr className="border-b border-slate-200">
+            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">ID</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Amount</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Payment</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Date</th>
           </tr>
         </thead>
         <tbody>
           {sales.map((sale) => (
-            <tr key={sale.id} className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-3 px-4 font-medium text-pos-dark">#{sale.id}</td>
-              <td className="py-3 px-4 font-bold text-pos-success">GHS {sale.total?.toFixed(2)}</td>
+            <tr key={sale.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <td className="py-3 px-4 font-medium text-slate-800">#{sale.id}</td>
+              <td className="py-3 px-4 font-bold text-emerald-600">GHS {sale.total?.toFixed(2)}</td>
               <td className="py-3 px-4">
                 <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
                   sale.paymentMethod === "Cash" ? "bg-green-100 text-green-700" :
@@ -336,7 +338,7 @@ function SalesHistoryTable({ sales }) {
                   {sale.paymentMethod}
                 </span>
               </td>
-              <td className="py-3 px-4 text-sm text-gray-600">
+              <td className="py-3 px-4 text-sm text-slate-600">
                 {new Date(sale.createdAt).toLocaleString()}
               </td>
             </tr>

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Eye, EyeOff, ArrowRight, Shield, Zap, Globe, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import CustomerSupport from '../components/CustomerSupport';
+import WhatsAppSupport from '../components/WhatsAppSupport';
 
 export default function Login() {
   const [slug, setSlug] = useState('');
@@ -243,7 +243,7 @@ export default function Login() {
         </div>
       </div>
 
-      <CustomerSupport />
+      <WhatsAppSupport />
     </div>
   );
 }

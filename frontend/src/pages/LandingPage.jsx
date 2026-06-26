@@ -7,7 +7,7 @@ import {
   Rocket, PlayCircle, Phone, MessageCircle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import CustomerSupport from '../components/CustomerSupport';
+import WhatsAppSupport from '../components/WhatsAppSupport';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -352,7 +352,7 @@ export default function LandingPage() {
       </footer>
 
       {/* Customer Support Widget */}
-      <CustomerSupport />
+      <WhatsAppSupport />
     </div>
   );
 }

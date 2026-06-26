@@ -14,7 +14,7 @@ import MoMoConfig from './pages/MoMoConfig';
 import PaystackCallback from './pages/PaystackCallback';
 import SuperAdmin from './pages/SuperAdmin';
 import Layout from './components/Layout';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (

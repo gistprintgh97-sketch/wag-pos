@@ -811,7 +811,7 @@
                 <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#faq">FAQ</a></li>
             </ul>
-            <a href="https://wag-pos-web.onrender.com" class="nav-cta">Get Started</a>
+            <a href="/login" class="nav-cta">Get Started</a>
             <button class="mobile-menu-btn"><i class="fas fa-bars"></i></button>
         </div>
     </nav>
@@ -828,7 +828,7 @@
                 <h1>The Modern POS Built for <span>Ghanaian Businesses</span></h1>
                 <p>From supermarkets to pharmacies, WAG POS helps you sell faster, track inventory smarter, and accept payments seamlessly — all in one powerful platform.</p>
                 <div class="hero-cta">
-                    <a href="https://wag-pos-web.onrender.com" class="btn-primary">
+                    <a href="/login" class="btn-primary">
                         <i class="fas fa-rocket"></i> Start Free Trial
                     </a>
                     <a href="#features" class="btn-secondary">
@@ -934,7 +934,7 @@
                     <li><i class="fas fa-check"></i> Cash Payments</li>
                     <li><i class="fas fa-check"></i> Email Support</li>
                 </ul>
-                <a href="https://wag-pos-web.onrender.com" class="pricing-cta">Get Started</a>
+                <a href="/login" class="pricing-cta">Get Started</a>
             </div>
             <div class="pricing-card popular fade-in">
                 <span class="popular-badge">Most Popular</span>
@@ -947,7 +947,7 @@
                     <li><i class="fas fa-check"></i> MTN MoMo Payments</li>
                     <li><i class="fas fa-check"></i> Priority Support</li>
                 </ul>
-                <a href="https://wag-pos-web.onrender.com" class="pricing-cta">Start Free Trial</a>
+                <a href="/login" class="pricing-cta">Start Free Trial</a>
             </div>
             <div class="pricing-card fade-in">
                 <h3>Pro</h3>
@@ -959,7 +959,7 @@
                     <li><i class="fas fa-check"></i> Card + MoMo Payments</li>
                     <li><i class="fas fa-check"></i> 24/7 Support</li>
                 </ul>
-                <a href="https://wag-pos-web.onrender.com" class="pricing-cta">Start Free Trial</a>
+                <a href="/login" class="pricing-cta">Start Free Trial</a>
             </div>
             <div class="pricing-card fade-in">
                 <h3>Enterprise</h3>
@@ -971,7 +971,7 @@
                     <li><i class="fas fa-check"></i> Custom Integrations</li>
                     <li><i class="fas fa-check"></i> Dedicated Manager</li>
                 </ul>
-                <a href="https://wag-pos-web.onrender.com" class="pricing-cta">Contact Sales</a>
+                <a href="/login" class="pricing-cta">Contact Sales</a>
             </div>
         </div>
     </section>
@@ -1084,7 +1084,7 @@
     <section class="cta-section">
         <h2>Ready to Transform Your Business?</h2>
         <p>Join hundreds of Ghanaian shop owners already using WAG POS to sell smarter, faster, and safer.</p>
-        <a href="https://wag-pos-web.onrender.com" class="cta-btn">
+        <a href="/login" class="cta-btn">
             <i class="fas fa-rocket"></i> Start Your Free Trial Now
         </a>
     </section>
@@ -1172,6 +1172,191 @@
                     target.scrollIntoView({ behavior: 'smooth' });
                 }
             });
+        });
+    </script>
+        <!-- Customer Support Widget -->
+    <div id="wag-support-widget" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999;">
+        <button id="wag-support-toggle" style="
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #22c55e;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s;
+        " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            💬
+        </button>
+        
+        <div id="wag-support-panel" style="
+            display: none;
+            position: absolute;
+            bottom: 75px;
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        ">
+            <!-- Header -->
+            <div style="background: #22c55e; padding: 16px 20px; color: white;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">📱</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 16px;">WAG POS Support</div>
+                        <div style="font-size: 13px; opacity: 0.9;">🟢 Typically replies in minutes</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div style="padding: 20px; background: #f8fafc;">
+                <div style="background: white; padding: 12px 16px; border-radius: 12px; border-bottom-left-radius: 4px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; color: #1e293b; line-height: 1.5;">
+                        👋 Welcome to <strong>WAG POS</strong>.<br>How can we help you today?
+                    </div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+                    <a href="https://wa.me/+233599775362" target="_blank" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 14px;
+                        background: white;
+                        border-radius: 10px;
+                        text-decoration: none;
+                        color: #1e293b;
+                        font-size: 13px;
+                        font-weight: 500;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
+                        <span style="color: #22c55e;">✓</span> Account setup & login issues
+                    </a>
+                    <a href="https://wa.me/+233599775362" target="_blank" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 14px;
+                        background: white;
+                        border-radius: 10px;
+                        text-decoration: none;
+                        color: #1e293b;
+                        font-size: 13px;
+                        font-weight: 500;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
+                        <span style="color: #22c55e;">✓</span> Payment & MoMo problems
+                    </a>
+                    <a href="https://wa.me/+233599775362" target="_blank" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 14px;
+                        background: white;
+                        border-radius: 10px;
+                        text-decoration: none;
+                        color: #1e293b;
+                        font-size: 13px;
+                        font-weight: 500;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
+                        <span style="color: #22c55e;">✓</span> Product & inventory help
+                    </a>
+                    <a href="https://wa.me/+233599775362" target="_blank" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 14px;
+                        background: white;
+                        border-radius: 10px;
+                        text-decoration: none;
+                        color: #1e293b;
+                        font-size: 13px;
+                        font-weight: 500;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
+                        <span style="color: #22c55e;">✓</span> Subscription & billing
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div style="padding: 16px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px;">
+                <a href="https://wa.me/+233599775362" target="_blank" style="
+                    flex: 1;
+                    padding: 10px;
+                    background: #22c55e;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 10px;
+                    text-align: center;
+                    font-weight: 600;
+                    font-size: 13px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                ">
+                    💬 Chat on WhatsApp
+                </a>
+                <a href="tel:+233599775362" style="
+                    flex: 1;
+                    padding: 10px;
+                    background: #3b82f6;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 10px;
+                    text-align: center;
+                    font-weight: 600;
+                    font-size: 13px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                ">
+                    📞 Call Us
+                </a>
+            </div>
+            
+            <!-- Footer -->
+            <div style="padding: 10px; text-align: center; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                <span style="font-size: 11px; color: #94a3b8;">Powered by WAG POS • Ghana</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle support panel
+        const toggleBtn = document.getElementById('wag-support-toggle');
+        const panel = document.getElementById('wag-support-panel');
+        let isOpen = false;
+
+        toggleBtn.addEventListener('click', () => {
+            isOpen = !isOpen;
+            panel.style.display = isOpen ? 'block' : 'none';
+            toggleBtn.innerHTML = isOpen ? '✕' : '💬';
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('wag-support-widget').contains(e.target) && isOpen) {
+                isOpen = false;
+                panel.style.display = 'none';
+                toggleBtn.innerHTML = '💬';
+            }
         });
     </script>
 </body>

@@ -1,5 +1,5 @@
 // frontend/src/App.jsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,36 +14,31 @@ import MoMoConfig from './pages/MoMoConfig';
 import PaystackCallback from './pages/PaystackCallback';
 import SuperAdmin from './pages/SuperAdmin';
 import Layout from './components/Layout';
-import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Landing page is now the homepage at "/" */}
-          <Route path="/" element={<LandingPage />} />
+    <Routes>
+      {/* Landing page is now the homepage at "/" */}
+      <Route path="/" element={<LandingPage />} />
 
-          {/* Auth routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/paystack/callback" element={<PaystackCallback />} />
+      {/* Auth routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/paystack/callback" element={<PaystackCallback />} />
 
-          {/* Protected dashboard routes */}
-          <Route element={<Layout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/momo-config" element={<MoMoConfig />} />
-            <Route path="/super-admin" element={<SuperAdmin />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      {/* Protected dashboard routes */}
+      <Route element={<Layout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/sales" element={<Sales />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/users" element={<Users />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/billing" element={<Billing />} />
+        <Route path="/momo-config" element={<MoMoConfig />} />
+        <Route path="/super-admin" element={<SuperAdmin />} />
+      </Route>
+    </Routes>
   );
 }
 

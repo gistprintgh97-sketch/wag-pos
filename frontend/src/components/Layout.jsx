@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -21,7 +21,7 @@ import {
   Sun
 } from "lucide-react";
 
-export default function Layout({ children }) {
+export default function Layout() {
   const { user, tenant, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
@@ -210,8 +210,8 @@ export default function Layout({ children }) {
           <div className="w-8" />
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-900">
-          {children}
+                <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-900">
+          <Outlet />
         </main>
       </div>
     </div>

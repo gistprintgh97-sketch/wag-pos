@@ -1,3 +1,4 @@
+// frontend/src/components/Layout.jsx
 import { useState } from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -13,7 +14,6 @@ import {
   Smartphone,
   LogOut,
   Menu,
-  X,
   Store,
   AlertTriangle,
   ChevronDown,
@@ -35,7 +35,7 @@ export default function Layout() {
     : 0;
 
   const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/sales", label: "New Sale", icon: ShoppingCart },
     { path: "/products", label: "Products", icon: Package },
     { path: "/reports", label: "Reports", icon: BarChart3 },
@@ -210,7 +210,7 @@ export default function Layout() {
           <div className="w-8" />
         </header>
 
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-900">
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-gray-50 dark:bg-slate-900">
           <Outlet />
         </main>
       </div>

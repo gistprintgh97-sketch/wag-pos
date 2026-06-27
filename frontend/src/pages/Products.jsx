@@ -16,6 +16,53 @@ import {
   Tag
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useState } from 'react';
+import { Plus, Upload } from 'lucide-react';
+import BulkUploadModal from '../components/BulkUploadModal';
+
+export default function Products() {
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+
+  const fetchProducts = async () => {
+    // your existing fetch logic
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">Products</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage your product inventory</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setShowBulkUpload(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Upload className="w-5 h-5" />
+            Bulk Upload
+          </button>
+          <button
+            onClick={() => {/* existing add product */}}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Add Product
+          </button>
+        </div>
+      </div>
+
+      {/* ... existing products table ... */}
+
+      <BulkUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onSuccess={fetchProducts}
+      />
+    </div>
+  );
+}
 
 export default function Products() {
   const { user } = useAuth();

@@ -7,7 +7,6 @@ import {
   Rocket, PlayCircle, Phone, MessageCircle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import WhatsAppSupport from '../components/WhatsAppSupport';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -350,9 +349,6 @@ export default function LandingPage() {
           <p>&copy; 2026 WAG POS. Built with ❤️ in Ghana. All rights reserved.</p>
         </div>
       </footer>
-
-      {/* Customer Support Widget */}
-      <WhatsAppSupport />
     </div>
   );
 }

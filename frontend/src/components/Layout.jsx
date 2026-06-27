@@ -35,7 +35,7 @@ export default function Layout() {
     : 0;
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/sales", label: "New Sale", icon: ShoppingCart },
     { path: "/products", label: "Products", icon: Package },
     { path: "/reports", label: "Reports", icon: BarChart3 },

@@ -4,173 +4,6 @@ const { PrismaClient } = require("@prisma/client");
 const { protect, adminOnly } = require("../middleware/auth");
 const { extractTenant } = require("../middleware/tenant");
 const prisma = new PrismaClient();
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { authenticate, requireRole } = require('../middleware/auth');
-const { getTenant } = require('../middleware/tenant');
-
-const prisma = new PrismaClient();
-const router = express.Router();
-
-// ... existing routes (GET, POST, PUT, DELETE) ...
-
-// BULK UPLOAD endpoint
-router.post('/bulk-upload', authenticate, requireRole(['ADMIN', 'MANAGER']), getTenant, async (req, res) => {
-  try {
-    const { products, duplicateAction = 'update' } = req.body;
-
-    if (!Array.isArray(products) || products.length === 0) {
-      return res.status(400).json({ message: 'No products provided. Please upload a valid file.' });
-    }
-
-    const tenantId = req.tenant.id;
-    const results = { success: [], failed: [] };
-
-    // Plan limits
-    const MAX_PRODUCTS = {
-      'ENTERPRISE': 10000,
-      'PRO': 2000,
-      'BASIC': 500,
-      'STARTER': 100
-    };
-    const planLimit = MAX_PRODUCTS[req.tenant.plan] || 100;
-
-    // Check current product count
-    const currentCount = await prisma.product.count({ where: { tenantId } });
-    const wouldExceed = currentCount + products.length > planLimit;
-
-    if (wouldExceed && duplicateAction !== 'update') {
-      return res.status(400).json({ 
-        message: `Plan limit exceeded. You can add ${planLimit - currentCount} more products on your ${req.tenant.plan} plan.` 
-      });
-    }
-
-    // Process each product
-    for (let i = 0; i < products.length; i++) {
-      const row = products[i];
-      const rowNum = i + 1;
-
-      try {
-        // Validate required fields
-        if (!row.name || String(row.name).trim() === '') {
-          throw new Error('Product name is required');
-        }
-
-        const price = parseFloat(row.price);
-        if (isNaN(price) || price < 0) {
-          throw new Error('Valid price is required (must be a positive number)');
-        }
-
-        const stock = parseInt(row.stock);
-        if (isNaN(stock) || stock < 0) {
-          throw new Error('Valid stock quantity is required (must be a positive number)');
-        }
-
-        const productData = {
-          name: String(row.name).trim(),
-          description: row.description ? String(row.description).trim() : null,
-          price: price,
-          cost: row.cost ? parseFloat(row.cost) || null : null,
-          stock: stock,
-          category: row.category ? String(row.category).trim() : 'Uncategorized',
-          barcode: row.barcode ? String(row.barcode).trim() : null,
-          sku: row.sku ? String(row.sku).trim() : null,
-          minStock: row.minstock ? parseInt(row.minstock) || 10 : 10,
-          tenantId: tenantId
-        };
-
-        // Check for duplicate by name
-        const existing = await prisma.product.findFirst({
-          where: { name: productData.name, tenantId }
-        });
-
-        if (existing) {
-          // Handle duplicate based on user choice
-          if (duplicateAction === 'skip') {
-            results.success.push({ 
-              row: rowNum, 
-              name: productData.name, 
-              action: 'skipped',
-              message: 'Duplicate found, skipped as requested'
-            });
-          } 
-          else if (duplicateAction === 'replace') {
-            // Complete overwrite
-            await prisma.product.update({
-              where: { id: existing.id },
-              data: {
-                name: productData.name,
-                description: productData.description,
-                price: productData.price,
-                cost: productData.cost,
-                stock: productData.stock,
-                category: productData.category,
-                barcode: productData.barcode,
-                sku: productData.sku,
-                minStock: productData.minStock
-              }
-            });
-            results.success.push({ 
-              row: rowNum, 
-              name: productData.name, 
-              action: 'updated',
-              message: 'Duplicate replaced with new data'
-            });
-          } 
-          else {
-            // Default: update - merge data (update price, add stock)
-            await prisma.product.update({
-              where: { id: existing.id },
-              data: {
-                price: productData.price,
-                cost: productData.cost || existing.cost,
-                stock: { increment: productData.stock },
-                category: productData.category,
-                minStock: productData.minStock,
-                description: productData.description || existing.description,
-                barcode: productData.barcode || existing.barcode,
-                sku: productData.sku || existing.sku
-              }
-            });
-            results.success.push({ 
-              row: rowNum, 
-              name: productData.name, 
-              action: 'updated',
-              message: `Price updated, stock +${productData.stock}`
-            });
-          }
-        } else {
-          // Create new product
-          await prisma.product.create({ data: productData });
-          results.success.push({ 
-            row: rowNum, 
-            name: productData.name, 
-            action: 'created',
-            message: 'New product created'
-          });
-        }
-
-      } catch (error) {
-        results.failed.push({ 
-          row: rowNum, 
-          name: row.name || 'Unknown', 
-          error: error.message 
-        });
-      }
-    }
-
-    res.json({
-      message: `Upload complete. ${results.success.length} succeeded, ${results.failed.length} failed.`,
-      results
-    });
-
-  } catch (error) {
-    console.error('Bulk upload error:', error);
-    res.status(500).json({ message: 'Server error during bulk upload' });
-  }
-});
-
-module.exports = router;
 
 // Helper: ensure all queries include tenant filter
 const tenantWhere = (req, extra = {}) => ({ tenantId: req.tenant.id, ...extra });
@@ -371,6 +204,161 @@ router.get("/low-stock/alert", extractTenant, protect, async (req, res) => {
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch low stock products" });
+  }
+});
+
+// BULK UPLOAD endpoint
+router.post('/bulk-upload', extractTenant, protect, adminOnly, async (req, res) => {
+  try {
+    const { products, duplicateAction = 'update' } = req.body;
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ message: 'No products provided. Please upload a valid file.' });
+    }
+
+    const tenantId = req.tenant.id;
+    const results = { success: [], failed: [] };
+
+    // Plan limits
+    const MAX_PRODUCTS = {
+      'ENTERPRISE': 10000,
+      'PRO': 2000,
+      'BASIC': 500,
+      'STARTER': 100
+    };
+    const planLimit = MAX_PRODUCTS[req.tenant.plan] || 100;
+
+    // Check current product count
+    const currentCount = await prisma.product.count({ where: { tenantId } });
+
+    if (currentCount + products.length > planLimit && duplicateAction !== 'update') {
+      return res.status(400).json({ 
+        message: `Plan limit exceeded. You can add ${planLimit - currentCount} more products on your ${req.tenant.plan} plan.` 
+      });
+    }
+
+    // Process each product
+    for (let i = 0; i < products.length; i++) {
+      const row = products[i];
+      const rowNum = i + 1;
+
+      try {
+        // Validate required fields
+        if (!row.name || String(row.name).trim() === '') {
+          throw new Error('Product name is required');
+        }
+
+        const price = parseFloat(row.price);
+        if (isNaN(price) || price < 0) {
+          throw new Error('Valid price is required (must be a positive number)');
+        }
+
+        const stock = parseInt(row.stock);
+        if (isNaN(stock) || stock < 0) {
+          throw new Error('Valid stock quantity is required (must be a positive number)');
+        }
+
+        const productData = {
+          name: String(row.name).trim(),
+          description: row.description ? String(row.description).trim() : null,
+          price: price,
+          cost: row.cost ? parseFloat(row.cost) || null : null,
+          stock: stock,
+          category: row.category ? String(row.category).trim() : 'Uncategorized',
+          barcode: row.barcode ? String(row.barcode).trim() : null,
+          sku: row.sku ? String(row.sku).trim() : null,
+          minStock: row.minstock ? parseInt(row.minstock) || 10 : 10,
+          tenantId: tenantId
+        };
+
+        // Check for duplicate by name
+        const existing = await prisma.product.findFirst({
+          where: { name: productData.name, tenantId }
+        });
+
+        if (existing) {
+          // Handle duplicate based on user choice
+          if (duplicateAction === 'skip') {
+            results.success.push({ 
+              row: rowNum, 
+              name: productData.name, 
+              action: 'skipped',
+              message: 'Duplicate found, skipped as requested'
+            });
+          } 
+          else if (duplicateAction === 'replace') {
+            // Complete overwrite
+            await prisma.product.update({
+              where: { id: existing.id },
+              data: {
+                name: productData.name,
+                description: productData.description,
+                price: productData.price,
+                cost: productData.cost,
+                stock: productData.stock,
+                category: productData.category,
+                barcode: productData.barcode,
+                sku: productData.sku,
+                minStock: productData.minStock
+              }
+            });
+            results.success.push({ 
+              row: rowNum, 
+              name: productData.name, 
+              action: 'replaced',
+              message: 'Duplicate replaced with new data'
+            });
+          } 
+          else {
+            // Default: update - merge data (update price, add stock)
+            await prisma.product.update({
+              where: { id: existing.id },
+              data: {
+                price: productData.price,
+                cost: productData.cost || existing.cost,
+                stock: { increment: productData.stock },
+                category: productData.category,
+                minStock: productData.minStock,
+                description: productData.description || existing.description,
+                barcode: productData.barcode || existing.barcode,
+                sku: productData.sku || existing.sku
+              }
+            });
+            results.success.push({ 
+              row: rowNum, 
+              name: productData.name, 
+              action: 'updated',
+              message: `Price updated, stock +${productData.stock}`
+            });
+          }
+        } else {
+          // Create new product
+          await prisma.product.create({ data: productData });
+          results.success.push({ 
+            row: rowNum, 
+            name: productData.name, 
+            action: 'created',
+            message: 'New product created'
+          });
+        }
+
+      } catch (error) {
+        results.failed.push({ 
+          row: rowNum, 
+          name: row.name || 'Unknown', 
+          error: error.message 
+        });
+      }
+    }
+
+    res.json({
+      message: `Upload complete. ${results.success.length} succeeded, ${results.failed.length} failed.`,
+      results
+    });
+
+  } catch (error) {
+    console.error('Bulk upload error:', error);
+    res.status(500).json({ message: 'Server error during bulk upload' });
   }
 });
 

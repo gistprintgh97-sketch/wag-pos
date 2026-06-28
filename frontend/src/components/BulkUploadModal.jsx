@@ -191,22 +191,22 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
   };
 
   const downloadTemplate = () => {
-    const headers = 'name,description,price,cost,stock,category,barcode,sku,minStock\n';
-    const examples = [
-      'Bottle Water,500ml bottled water,2.00,1.00,50,Beverages,123456789,BW001,10\n',
-      'Bread,Fresh wheat bread,8.00,5.00,30,Bakery,987654321,BR001,5\n',
-      'Coca Cola,330ml can,5.00,3.50,100,Beverages,111222333,CC001,20\n',
-      'Cooking Oil (1L),Vegetable oil,18.00,15.00,25,Groceries,444555666,CO001,10\n'
-    ].join('');
-
-    const blob = new Blob([headers + examples], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'wag-pos-products-template.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
+  const headers = 'name,price,cost,stock,category,barcode\n';
+  const examples = [
+    'Bottle Water,2.00,1.00,50,Beverages,123456789\n',
+    'Bread,8.00,5.00,30,Bakery,987654321\n',
+    'Coca Cola,5.00,3.50,100,Beverages,111222333\n',
+    'Cooking Oil (1L),18.00,15.00,25,Groceries,444555666\n'
+  ].join('');
+  
+  const blob = new Blob([headers + examples], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wag-pos-products-template.csv';
+  a.click();
+  window.URL.revokeObjectURL(url);
+};
 
   const reset = () => {
     setFile(null);
@@ -296,7 +296,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
                 {file ? 'Change File' : 'Select File'}
               </button>
               <p className="text-xs text-gray-400 mt-2">
-                Supports: .csv, .xlsx | Required: name, price, stock | Optional: description, cost, category, barcode, sku, minStock
+                Supports: .csv, .xlsx | Required: name, price, stock | Optional: cost, category, barcode
               </p>
             </div>
 

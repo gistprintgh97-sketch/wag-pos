@@ -207,7 +207,7 @@ router.get("/low-stock/alert", extractTenant, protect, async (req, res) => {
   }
 });
 
-// BULK UPLOAD endpoint
+// BULK UPLOAD endpoint - FIXED to match Prisma schema
 router.post('/bulk-upload', extractTenant, protect, adminOnly, async (req, res) => {
   try {
     const { products, duplicateAction = 'update' } = req.body;
@@ -226,14 +226,22 @@ router.post('/bulk-upload', extractTenant, protect, adminOnly, async (req, res) 
       'BASIC': 500,
       'STARTER': 100
     };
-    const planLimit = MAX_PRODUCTS[req.tenant.plan] || 100;
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { subscription: true }
+    });
+
+    const planLimit = MAX_PRODUCTS[tenant?.subscription?.plan] || 100;
 
     // Check current product count
-    const currentCount = await prisma.product.count({ where: { tenantId } });
+    const currentCount = await prisma.product.count({ 
+      where: { tenantId, deleted: false } 
+    });
 
     if (currentCount + products.length > planLimit && duplicateAction !== 'update') {
       return res.status(400).json({ 
-        message: `Plan limit exceeded. You can add ${planLimit - currentCount} more products on your ${req.tenant.plan} plan.` 
+        message: `Plan limit exceeded. You can add ${planLimit - currentCount} more products on your ${tenant?.subscription?.plan || 'STARTER'} plan.` 
       });
     }
 
@@ -258,16 +266,14 @@ router.post('/bulk-upload', extractTenant, protect, adminOnly, async (req, res) 
           throw new Error('Valid stock quantity is required (must be a positive number)');
         }
 
+        // Build product data matching Prisma schema exactly
         const productData = {
           name: String(row.name).trim(),
-          description: row.description ? String(row.description).trim() : null,
           price: price,
-          cost: row.cost ? parseFloat(row.cost) || null : null,
           stock: stock,
-          category: row.category ? String(row.category).trim() : 'Uncategorized',
+          costPrice: row.cost ? parseFloat(row.cost) || 0 : 0,  // Map CSV 'cost' to Prisma 'costPrice'
+          category: row.category ? String(row.category).trim() : 'General',
           barcode: row.barcode ? String(row.barcode).trim() : null,
-          sku: row.sku ? String(row.sku).trim() : null,
-          minStock: row.minstock ? parseInt(row.minstock) || 10 : 10,
           tenantId: tenantId
         };
 
@@ -292,14 +298,11 @@ router.post('/bulk-upload', extractTenant, protect, adminOnly, async (req, res) 
               where: { id: existing.id },
               data: {
                 name: productData.name,
-                description: productData.description,
                 price: productData.price,
-                cost: productData.cost,
+                costPrice: productData.costPrice,
                 stock: productData.stock,
                 category: productData.category,
-                barcode: productData.barcode,
-                sku: productData.sku,
-                minStock: productData.minStock
+                barcode: productData.barcode
               }
             });
             results.success.push({ 
@@ -315,13 +318,10 @@ router.post('/bulk-upload', extractTenant, protect, adminOnly, async (req, res) 
               where: { id: existing.id },
               data: {
                 price: productData.price,
-                cost: productData.cost || existing.cost,
+                costPrice: productData.costPrice || existing.costPrice,
                 stock: { increment: productData.stock },
                 category: productData.category,
-                minStock: productData.minStock,
-                description: productData.description || existing.description,
-                barcode: productData.barcode || existing.barcode,
-                sku: productData.sku || existing.sku
+                barcode: productData.barcode || existing.barcode
               }
             });
             results.success.push({ 

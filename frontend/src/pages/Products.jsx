@@ -5,10 +5,12 @@ import { useApi } from "../hooks/useApi";
 import API from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
+import BulkUploadModal from "../components/BulkUploadModal";
 import {
   Package,
   Search,
   Plus,
+  Upload,
   Edit2,
   Trash2,
   RefreshCw,
@@ -16,53 +18,6 @@ import {
   Tag
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useState } from 'react';
-import { Plus, Upload } from 'lucide-react';
-import BulkUploadModal from '../components/BulkUploadModal';
-
-export default function Products() {
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
-
-  const fetchProducts = async () => {
-    // your existing fetch logic
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">Products</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage your product inventory</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setShowBulkUpload(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Upload className="w-5 h-5" />
-            Bulk Upload
-          </button>
-          <button
-            onClick={() => {/* existing add product */}}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Add Product
-          </button>
-        </div>
-      </div>
-
-      {/* ... existing products table ... */}
-
-      <BulkUploadModal
-        isOpen={showBulkUpload}
-        onClose={() => setShowBulkUpload(false)}
-        onSuccess={fetchProducts}
-      />
-    </div>
-  );
-}
 
 export default function Products() {
   const { user } = useAuth();
@@ -71,6 +26,7 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [restockingProduct, setRestockingProduct] = useState(null);
@@ -188,27 +144,36 @@ export default function Products() {
           <p className="text-gray-500 mt-1 dark:text-slate-400">Manage your product inventory</p>
         </div>
         {user?.role === "ADMIN" && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2 w-fit"
-          >
-            <Plus size={18} />
-            Add Product
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setShowBulkUpload(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Upload size={18} />
+              Bulk Upload
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-primary flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Add Product
+            </button>
+          </div>
         )}
       </div>
 
       {/* Search */}
       <div className="card flex items-center gap-3 dark:bg-slate-800 dark:border-slate-700">
-      <Search size={20} className="text-gray-400 dark:text-slate-500" />
-      <input
-      type="text"
-      placeholder="Search products..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="flex-1 outline-none text-gray-700 placeholder-gray-400 dark:text-slate-100 dark:placeholder-slate-500 bg-transparent"
-    />
-  </div>
+        <Search size={20} className="text-gray-400 dark:text-slate-500" />
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 outline-none text-gray-700 placeholder-gray-400 dark:text-slate-100 dark:placeholder-slate-500 bg-transparent"
+        />
+      </div>
 
       {/* Products Table */}
       <div className="card overflow-hidden">
@@ -333,8 +298,7 @@ export default function Products() {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Product">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Product Name</label>
-            <input className="input-field dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
             <input
               type="text"
               value={newProduct.name}
@@ -528,6 +492,13 @@ export default function Products() {
           </div>
         </div>
       </Modal>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onSuccess={fetchProducts}
+      />
     </div>
   );
 }

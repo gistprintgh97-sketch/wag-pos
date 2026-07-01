@@ -76,10 +76,42 @@ export default function Billing() {
   };
 
   const plans = [
-    { id: "STARTER", name: "Starter", icon: Zap, priceMonthly: 0, priceYearly: 0, color: "gray", features: ["2 users", "100 products", "Basic POS", "Reports"] },
-    { id: "BASIC", name: "Basic", icon: Building2, priceMonthly: 49, priceYearly: 499, color: "blue", features: ["5 users", "500 products", "MoMo Payments", "Email Support"] },
-    { id: "PRO", name: "Pro", icon: Crown, priceMonthly: 99, priceYearly: 999, color: "purple", features: ["15 users", "2000 products", "All Payment Methods", "Priority Support", "Advanced Reports"] },
-    { id: "ENTERPRISE", name: "Enterprise", icon: Rocket, priceMonthly: 249, priceYearly: 2499, color: "amber", features: ["50 users", "10,000 products", "API Access", "Dedicated Support", "Custom Integrations"] }
+    { 
+      id: "STARTER", 
+      name: "Starter", 
+      icon: Zap, 
+      priceMonthly: 0, 
+      priceYearly: 0, 
+      color: "gray", 
+      features: ["1 User", "200 Products", "Basic Reports", "MTN MoMo", "Email Support"] 
+    },
+    { 
+      id: "BASIC", 
+      name: "Basic", 
+      icon: Building2, 
+      priceMonthly: 149, 
+      priceYearly: 1520, 
+      color: "blue", 
+      features: ["3 Users", "1,000 Products", "Advanced Reports", "MTN MoMo + Cards", "Priority Support"] 
+    },
+    { 
+      id: "PRO", 
+      name: "Pro", 
+      icon: Crown, 
+      priceMonthly: 349, 
+      priceYearly: 3560, 
+      color: "purple", 
+      features: ["8 Users", "5,000 Products", "All Features", "Offline Mode", "24/7 Support"] 
+    },
+    { 
+      id: "ENTERPRISE", 
+      name: "Enterprise", 
+      icon: Rocket, 
+      priceMonthly: 799, 
+      priceYearly: 8150, 
+      color: "amber", 
+      features: ["Unlimited Users", "Unlimited Products", "Multi-branch", "API Access", "Dedicated Manager"] 
+    }
   ];
 
   const currentPlan = billingInfo?.subscription?.plan;

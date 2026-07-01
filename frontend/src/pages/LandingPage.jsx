@@ -4,14 +4,16 @@ import {
   ShoppingBag, Shield, Zap, Globe, CheckCircle, 
   Star, ChevronDown, ArrowRight, BarChart3, 
   Boxes, Smartphone, PieChart, Users, Receipt,
-  Rocket, PlayCircle, Phone, MessageCircle
+  Rocket, PlayCircle, Phone, MessageCircle, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import WhatsAppSupport from '../components/WhatsAppSupport';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [activeFaq, setActiveFaq] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [isYearly, setIsYearly] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -35,10 +37,46 @@ export default function LandingPage() {
   ];
 
   const pricing = [
-    { name: "Starter", price: "Free", period: "", features: ["2 Users", "100 Products", "Basic Reports", "Cash Payments", "Email Support"], popular: false, cta: "Get Started" },
-    { name: "Basic", price: "GHS 49", period: "/mo", features: ["5 Users", "500 Products", "Advanced Reports", "MTN MoMo Payments", "Priority Support"], popular: true, cta: "Start Free Trial" },
-    { name: "Pro", price: "GHS 99", period: "/mo", features: ["15 Users", "2,000 Products", "All Features", "Card + MoMo Payments", "24/7 Support"], popular: false, cta: "Start Free Trial" },
-    { name: "Enterprise", price: "GHS 249", period: "/mo", features: ["50 Users", "10,000 Products", "All Features", "Custom Integrations", "Dedicated Manager"], popular: false, cta: "Contact Sales" },
+    { 
+      name: "Starter", 
+      monthlyPrice: 0, 
+      displayPrice: "Free", 
+      period: "14-day trial", 
+      yearlyPrice: 0,
+      features: ["1 User", "200 Products", "Basic Reports", "MTN MoMo", "Email Support"], 
+      popular: false, 
+      cta: "Start Free Trial" 
+    },
+    { 
+      name: "Basic", 
+      monthlyPrice: 149, 
+      displayPrice: "GHS 149", 
+      period: "/mo", 
+      yearlyPrice: 1490,
+      features: ["3 Users", "1,000 Products", "Advanced Reports", "MTN MoMo + Cards", "Priority Support"], 
+      popular: true, 
+      cta: "Start Free Trial" 
+    },
+    { 
+      name: "Pro", 
+      monthlyPrice: 349, 
+      displayPrice: "GHS 349", 
+      period: "/mo", 
+      yearlyPrice: 3490,
+      features: ["8 Users", "5,000 Products", "All Features", "Offline Mode", "24/7 Support"], 
+      popular: false, 
+      cta: "Start Free Trial" 
+    },
+    { 
+      name: "Enterprise", 
+      monthlyPrice: 799, 
+      displayPrice: "GHS 799", 
+      period: "/mo", 
+      yearlyPrice: 7990,
+      features: ["Unlimited Users", "Unlimited Products", "Multi-branch", "API Access", "Dedicated Manager"], 
+      popular: false, 
+      cta: "Contact Sales" 
+    },
   ];
 
   const testimonials = [
@@ -48,7 +86,7 @@ export default function LandingPage() {
   ];
 
   const faqs = [
-    { q: "Is WAG POS really free to start?", a: "Yes! Our Starter plan is completely free forever. You get 2 users, 100 products, and basic reports. No credit card required. Upgrade only when you need more features." },
+    { q: "Is WAG POS really free to start?", a: "Yes! Start with a 14-day free trial on any plan. No credit card required. After the trial, choose the plan that fits your business. Upgrade or downgrade anytime." },
     { q: "Can I accept MTN Mobile Money payments?", a: "Absolutely! WAG POS integrates with Paystack to accept MTN MoMo, Vodafone Cash, AirtelTigo Money, and all major bank cards. Payments settle directly to your Ghanaian bank account." },
     { q: "Do I need special hardware?", a: "No! WAG POS works on any device with a browser — laptop, tablet, or even your phone. For the best experience, we recommend a tablet or touchscreen monitor at your checkout counter." },
     { q: "Is my data secure?", a: "Yes! We use bank-grade SSL encryption, JWT authentication, rate limiting, and input validation. Your data is stored on secure PostgreSQL databases with automated backups." },
@@ -194,20 +232,57 @@ export default function LandingPage() {
       {/* Pricing */}
       <section id="pricing" className="py-24 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-4xl font-extrabold text-slate-800 mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-slate-500 text-lg">Start free, upgrade when you grow. No hidden fees.</p>
+            <p className="text-slate-500 text-lg">Start with a 14-day free trial. Upgrade when you grow. No hidden fees.</p>
           </div>
+
+          {/* Billing Toggle */}
+          <div className="flex justify-center mb-12">
+            <div className="bg-gray-100 rounded-full p-1 flex items-center">
+              <button
+                onClick={() => setIsYearly(false)}
+                className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                  !isYearly ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setIsYearly(true)}
+                className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
+                  isYearly ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Yearly
+                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">Save 17%</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {pricing.map((plan, i) => (
-              <div key={i} className={`bg-white rounded-2xl p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl border-2 ${plan.popular ? 'border-amber-400 scale-105' : 'border-transparent hover:border-blue-200'}`}>
+              <div key={i} className={`bg-white rounded-2xl p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl border-2 relative ${plan.popular ? 'border-amber-400 scale-105' : 'border-transparent hover:border-blue-200'}`}>
                 {plan.popular && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-800 px-4 py-1 rounded-full text-sm font-bold">Most Popular</span>
                 )}
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="text-4xl font-black text-blue-600 my-4">
-                  {plan.price}<span className="text-base text-slate-400 font-normal">{plan.period}</span>
+                <div className="my-4">
+                  <span className="text-4xl font-black text-blue-600">
+                    {isYearly && plan.yearlyPrice > 0 ? `GHS ${plan.yearlyPrice.toLocaleString()}` : plan.displayPrice}
+                  </span>
+                  <span className="text-base text-slate-400 font-normal">
+                    {isYearly && plan.yearlyPrice > 0 ? '/yr' : plan.period}
+                  </span>
                 </div>
+                {isYearly && plan.yearlyPrice > 0 && (
+                  <p className="text-sm text-green-600 font-medium mb-4">
+                    Save GHS {(plan.monthlyPrice * 12 - plan.yearlyPrice).toLocaleString()} vs monthly
+                  </p>
+                )}
+                {plan.monthlyPrice === 0 && !isYearly && (
+                  <p className="text-sm text-slate-500 mb-4">No credit card required</p>
+                )}
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((f, j) => (
                     <li key={j} className="flex items-center gap-2 text-slate-500">
@@ -228,6 +303,16 @@ export default function LandingPage() {
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* Enterprise CTA */}
+          <div className="mt-12 text-center">
+            <p className="text-slate-500">
+              Need a custom plan?{' '}
+              <button onClick={() => window.location.href = 'mailto:sales@wagpos.com'} className="text-blue-600 font-semibold hover:text-blue-700">
+                Contact our sales team →
+              </button>
+            </p>
           </div>
         </div>
       </section>
@@ -296,6 +381,7 @@ export default function LandingPage() {
             <Rocket className="w-5 h-5" />
             Start Your Free Trial Now
           </button>
+          <p className="text-sm text-blue-200 mt-4">14-day free trial • No credit card required</p>
         </div>
       </section>
 
@@ -349,6 +435,9 @@ export default function LandingPage() {
           <p>&copy; 2026 WAG POS. Built with ❤️ in Ghana. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* WhatsApp Support Widget */}
+      <WhatsAppSupport />
     </div>
   );
 }

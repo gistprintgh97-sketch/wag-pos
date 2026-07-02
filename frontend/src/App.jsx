@@ -35,7 +35,7 @@ function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/billing" element={<Billing />} />
-        <Route path="/momo-config" element={<MoMoConfig />} />
+        <Route path="/momo" element={<MoMoConfig />} />
         <Route path="/super-admin" element={<SuperAdmin />} />
       </Route>
     </Routes>

@@ -10,7 +10,9 @@ const { handlePaystackWebhook } = require("./services/webhooks");
 
 const prisma = new PrismaClient();
 const app = express();
-
+const superAdminRoutes = require('./routes/superAdmin');
+// ...
+app.use('/api/super-admin', protect, adminOnly, superAdminRoutes);
 app.post("/api/tenants/init-demo", async (req, res) => {
   try {
     let tenant = await prisma.tenant.findUnique({

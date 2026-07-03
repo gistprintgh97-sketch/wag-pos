@@ -11,7 +11,7 @@ const tenantWhere = (req, extra = {}) => ({ tenantId: req.tenant.id, ...extra })
 router.post("/", extractTenant, protect, async (req, res) => {
   try {
     const { items, paymentMethod, momoPhone } = req.body;
-
+    const { logActivity } = require('../services/activityLogger');
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "No items in cart" });
     }
@@ -19,7 +19,17 @@ router.post("/", extractTenant, protect, async (req, res) => {
     if (!paymentMethod) {
       return res.status(400).json({ message: "Payment method required" });
     }
-
+await logActivity({
+  tenantId: req.tenant.id,
+  userId: req.user?.id,
+  action: 'SALE_CREATED',
+  metadata: { 
+    amount: sale.total, 
+    items: sale.items?.length, 
+    paymentMethod: sale.paymentMethod 
+  },
+  req,
+});
     // Validate payment method against tenant settings
     const settings = await prisma.tenantSetting.findUnique({
       where: { tenantId: req.tenant.id }

@@ -6,6 +6,22 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+model ActivityLog {
+  id        String   @id @default(uuid())
+  tenantId  String?
+  userId    Int?     // <-- FIXED: was String?, now Int? to match User.id
+  action    String
+  metadata  String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([tenantId])
+}
 
 // ───────────────────────────────────────────────
 // TENANT / ORGANIZATION (Multi-tenancy core)
@@ -33,6 +49,7 @@ model Tenant {
   subscription  Subscription?
   payments      Payment[]
   momoConfigs   MomoConfig?
+  activityLogs  ActivityLog[]
 
   @@index([slug])
   @@index([status])
@@ -133,6 +150,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   sales     Sale[]
+  activityLogs ActivityLog[]
 
   @@unique([tenantId, name])
   @@index([tenantId])

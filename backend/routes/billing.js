@@ -44,11 +44,20 @@ router.get("/info", extractTenant, protect, adminOnly, async (req, res) => {
 router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) => {
   try {
     const { plan, billingCycle } = req.body;
-
+    const { logActivity } = require('../services/activityLogger');
     if (!PLANS[plan]) {
       return res.status(400).json({ message: "Invalid plan selected" });
     }
-
+await logActivity({
+  tenantId: req.tenant.id,
+  action: 'SUBSCRIPTION_UPGRADE',
+  metadata: { 
+    plan: newPlan, 
+    amount: paymentAmount, 
+    method: 'PAYSTACK' 
+  },
+  req,
+});
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.tenant.id },
       include: { subscription: true }

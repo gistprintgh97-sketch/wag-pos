@@ -6,6 +6,7 @@ const { PrismaClient } = require("@prisma/client");
 const { protect, adminOnly } = require("../middleware/auth");
 const { extractTenant } = require("../middleware/tenant");
 const prisma = new PrismaClient();
+const { logActivity } = require('../services/activityLogger');
 
 // ─── PLANS & PRICING ───────────────────────────
 const PLANS = {
@@ -22,7 +23,6 @@ router.post("/register", registerRules, validate, async (req, res) => {
   try {
     const { name, slug, email, phone, businessType, adminName, adminPin, plan = "STARTER" } = req.body;
 
-    // Validation
     if (!name || !slug || !email || !adminName || !adminPin) {
       return res.status(400).json({ message: "Name, slug, email, admin name and PIN are required" });
     }
@@ -35,7 +35,6 @@ router.post("/register", registerRules, validate, async (req, res) => {
       return res.status(400).json({ message: "Admin PIN must be at least 4 digits" });
     }
 
-    // Check if slug exists
     const existing = await prisma.tenant.findUnique({ where: { slug: slug.toLowerCase() } });
     if (existing) {
       return res.status(409).json({ message: "This shop URL is already taken. Try a different name." });
@@ -44,7 +43,7 @@ router.post("/register", registerRules, validate, async (req, res) => {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS);
 
-    // Create tenant with admin user in transaction
+    // Create tenant + admin in one transaction
     const result = await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
         data: {
@@ -76,7 +75,6 @@ router.post("/register", registerRules, validate, async (req, res) => {
         }
       });
 
-      // Create admin user
       const admin = await tx.user.create({
         data: {
           tenantId: tenant.id,
@@ -87,6 +85,18 @@ router.post("/register", registerRules, validate, async (req, res) => {
       });
 
       return { tenant, admin };
+    });
+
+    // LOG ACTIVITY — AFTER the transaction succeeds, OUTSIDE of it
+    await logActivity({
+      tenantId: result.tenant.id,
+      action: 'TENANT_REGISTERED',
+      metadata: { 
+        shopName: result.tenant.name, 
+        plan: plan,  // Use the plan variable from req.body, not tenant.plan
+        businessType: result.tenant.businessType 
+      },
+      req,
     });
 
     // Generate token
@@ -136,7 +146,6 @@ router.post("/login", loginRules, validate, async (req, res) => {
       return res.status(404).json({ message: "Shop not found" });
     }
 
-    // Check tenant status
     if (tenant.status === "SUSPENDED") {
       return res.status(403).json({ message: "Account suspended. Contact support." });
     }
@@ -145,7 +154,6 @@ router.post("/login", loginRules, validate, async (req, res) => {
       return res.status(403).json({ message: "Account cancelled. Please renew." });
     }
 
-    // Find user by PIN within tenant
     const user = await prisma.user.findFirst({
       where: { tenantId: tenant.id, pin }
     });
@@ -157,6 +165,15 @@ router.post("/login", loginRules, validate, async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({ message: "User account deactivated" });
     }
+
+    // LOG ACTIVITY — someone just logged in
+    await logActivity({
+      tenantId: tenant.id,
+      userId: user.id,
+      action: 'USER_LOGIN',
+      metadata: { role: user.role, name: user.name },
+      req,
+    });
 
     const token = jwt.sign(
       { id: user.id, name: user.name, role: user.role, tenantId: tenant.id },

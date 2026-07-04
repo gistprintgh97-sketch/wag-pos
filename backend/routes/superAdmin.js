@@ -141,5 +141,4 @@ router.get("/payments", superAdminOnly, async (req, res) => {
     res.status(500).json({ message: "Failed to fetch payments" });
   }
 });
-
-module.exports = { router, superAdminOnly };
+module.exports = router;

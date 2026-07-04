@@ -4,13 +4,14 @@ const { PrismaClient } = require("@prisma/client");
 const { protect, adminOnly } = require("../middleware/auth");
 const { extractTenant } = require("../middleware/tenant");
 const paystack = require("../services/paystack");
+const { logActivity } = require('../services/activityLogger');
 const prisma = new PrismaClient();
 
 const PLANS = {
-  STARTER: { monthly: 0, yearly: 0, maxUsers: 2, maxProducts: 100 },
-  BASIC:   { monthly: 49, yearly: 499, maxUsers: 5, maxProducts: 500 },
-  PRO:     { monthly: 99, yearly: 999, maxUsers: 15, maxProducts: 2000 },
-  ENTERPRISE: { monthly: 249, yearly: 2499, maxUsers: 50, maxProducts: 10000 }
+  STARTER: { monthly: 0, yearly: 0, maxUsers: 1, maxProducts: 200 },
+  BASIC:   { monthly: 149, yearly: 1520, maxUsers: 3, maxProducts: 1000 },
+  PRO:     { monthly: 349, yearly: 3560, maxUsers: 8, maxProducts: 5000 },
+  ENTERPRISE: { monthly: 799, yearly: 8150, maxUsers: 999999, maxProducts: 999999 }
 };
 
 // ─── GET BILLING INFO ──────────────────────────
@@ -44,20 +45,11 @@ router.get("/info", extractTenant, protect, adminOnly, async (req, res) => {
 router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) => {
   try {
     const { plan, billingCycle } = req.body;
-    const { logActivity } = require('../services/activityLogger');
+
     if (!PLANS[plan]) {
       return res.status(400).json({ message: "Invalid plan selected" });
     }
-await logActivity({
-  tenantId: req.tenant.id,
-  action: 'SUBSCRIPTION_UPGRADE',
-  metadata: { 
-    plan: newPlan, 
-    amount: paymentAmount, 
-    method: 'PAYSTACK' 
-  },
-  req,
-});
+
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.tenant.id },
       include: { subscription: true }
@@ -83,13 +75,20 @@ await logActivity({
         data: { status: "ACTIVE" }
       });
 
+      await logActivity({
+        tenantId: tenant.id,
+        action: 'SUBSCRIPTION_UPGRADE',
+        metadata: { plan: plan, amount: 0, method: 'FREE' },
+        req,
+      });
+
       return res.json({ message: "Subscribed to free plan successfully" });
     }
 
     // Initialize Paystack transaction
     const transaction = await paystack.initializeTransaction({
       email: tenant.email,
-      amount,
+      amount: amount * 100, // Paystack expects amount in pesewas
       metadata: {
         tenantId: tenant.id,
         plan,
@@ -144,8 +143,8 @@ router.post("/verify", extractTenant, protect, adminOnly, async (req, res) => {
         plan: plan || "BASIC",
         status: "ACTIVE",
         billingCycle: billingCycle || "MONTHLY",
-        priceMonthly: PLANS[plan]?.monthly || 49,
-        priceYearly: PLANS[plan]?.yearly || 499,
+        priceMonthly: PLANS[plan]?.monthly || 149,
+        priceYearly: PLANS[plan]?.yearly || 1520,
         currentPeriodStart: new Date(),
         currentPeriodEnd: periodEnd
       }
@@ -162,6 +161,14 @@ router.post("/verify", extractTenant, protect, adminOnly, async (req, res) => {
         paystackRef: reference,
         description: `Subscription payment - ${plan} (${billingCycle})`
       }
+    });
+
+    // Log activity
+    await logActivity({
+      tenantId: req.tenant.id,
+      action: 'SUBSCRIPTION_UPGRADE',
+      metadata: { plan: plan, amount: verification.data.amount / 100, method: 'PAYSTACK' },
+      req,
     });
 
     // Activate tenant

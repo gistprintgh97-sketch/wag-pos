@@ -22,7 +22,7 @@ export default function Login() {
     }
 
     setLoading(true);
-    const result = await login(form);
+    const result = await login(form.slug, form.pin);
     setLoading(false);
 
     if (result.success) {

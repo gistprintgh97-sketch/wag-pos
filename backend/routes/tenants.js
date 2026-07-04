@@ -10,10 +10,10 @@ const { logActivity } = require('../services/activityLogger');
 
 // ─── PLANS & PRICING ───────────────────────────
 const PLANS = {
-  STARTER: { monthly: 0, yearly: 0, maxUsers: 2, maxProducts: 100, features: ["basic_pos", "reports"] },
-  BASIC:   { monthly: 49, yearly: 499, maxUsers: 5, maxProducts: 500, features: ["basic_pos", "reports", "momo"] },
-  PRO:     { monthly: 99, yearly: 999, maxUsers: 15, maxProducts: 2000, features: ["all"] },
-  ENTERPRISE: { monthly: 249, yearly: 2499, maxUsers: 50, maxProducts: 10000, features: ["all", "api_access", "priority_support"] }
+  STARTER: { monthly: 0, yearly: 0, maxUsers: 1, maxProducts: 200, features: ["basic_pos", "reports", "momo"] },
+  BASIC:   { monthly: 149, yearly: 1520, maxUsers: 3, maxProducts: 1000, features: ["basic_pos", "reports", "momo", "advanced_reports"] },
+  PRO:     { monthly: 349, yearly: 3560, maxUsers: 8, maxProducts: 5000, features: ["all", "offline_mode"] },
+  ENTERPRISE: { monthly: 799, yearly: 8150, maxUsers: 999999, maxProducts: 999999, features: ["all", "api_access", "priority_support", "multi_branch"] }
 };
 
 const TRIAL_DAYS = 14;

@@ -48,7 +48,7 @@ export default function Login() {
           <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/30">
             <ShoppingBag size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Sign In</h1>
+          <h1 className="text-2xl font-bold text-white">Welcome to WAG Point of Sales</h1>
           <p className="text-slate-400 mt-1">Access your shop dashboard</p>
         </div>
 

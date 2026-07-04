@@ -1,4 +1,4 @@
-const { validate, loginRules, registerRules } = require('../middleware/validation');
+const { validate, registerRules } = require('../middleware/validation');
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
@@ -129,7 +129,7 @@ router.post("/register", registerRules, validate, async (req, res) => {
 });
 
 // ─── TENANT LOGIN ──────────────────────────────
-router.post("/login", loginRules, validate, async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { slug, pin } = req.body;
 

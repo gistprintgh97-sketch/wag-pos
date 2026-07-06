@@ -12,9 +12,7 @@ import {
   Building2,
   Rocket,
   Calendar,
-  ArrowRight,
-  Smartphone,
-  Loader
+  ArrowRight
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -24,11 +22,6 @@ export default function Billing() {
   const [billingInfo, setBillingInfo] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState("");
   const [billingCycle, setBillingCycle] = useState("MONTHLY");
-  const [paymentMethod, setPaymentMethod] = useState("PAYSTACK");
-  const [momoPhone, setMomoPhone] = useState("");
-  const [otpRequired, setOtpRequired] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [paymentReference, setPaymentReference] = useState("");
 
   const fetchBilling = async () => {
     const result = await execute(() => API.get("/billing/info"), { showError: true });
@@ -48,62 +41,18 @@ export default function Billing() {
       return;
     }
 
-    if (paymentMethod === "MTN_MOMO" && !momoPhone) {
-      toast.error("Please enter your MoMo phone number");
-      return;
-    }
-
     const result = await execute(
-      () => API.post("/billing/subscribe", { 
-        plan: selectedPlan, 
-        billingCycle,
-        paymentMethod,
-        momoPhone: paymentMethod === "MTN_MOMO" ? momoPhone : undefined
-      }),
+      () => API.post("/billing/subscribe", { plan: selectedPlan, billingCycle }),
       { showError: true }
     );
 
     if (result.success) {
-      if (result.data.requiresOtp) {
-        setOtpRequired(true);
-        setPaymentReference(result.data.reference);
-        toast.info("Please enter the OTP sent to your phone");
-      } else if (result.data.authorizationUrl) {
-        // Redirect to Paystack payment page
+      if (result.data.authorizationUrl) {
+        // Redirect to Paystack checkout — handles Card, MoMo, Bank automatically
         window.location.href = result.data.authorizationUrl;
-      } else if (result.data.success) {
-        toast.success("Subscription activated!");
-        fetchBilling();
       } else {
-        toast.success(result.data.message);
+        toast.success("Subscription updated!");
         fetchBilling();
-      }
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otp) {
-      toast.error("Please enter the OTP");
-      return;
-    }
-
-    const result = await execute(
-      () => API.post("/billing/verify-otp", { 
-        reference: paymentReference, 
-        otp 
-      }),
-      { showError: true }
-    );
-
-    if (result.success) {
-      if (result.data.success) {
-        setOtpRequired(false);
-        setOtp("");
-        setPaymentReference("");
-        toast.success("Payment verified! Subscription active.");
-        fetchBilling();
-      } else {
-        toast.info(result.data.message);
       }
     }
   };
@@ -249,89 +198,6 @@ export default function Billing() {
           })}
         </div>
 
-        {/* Payment Method Selection */}
-        {selectedPlan !== "STARTER" && (
-          <div className="mt-6 space-y-4">
-            <h3 className="text-sm font-semibold text-gray-700">Payment Method</h3>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("PAYSTACK")}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
-                  paymentMethod === "PAYSTACK"
-                    ? "border-pos-blue bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <CreditCard size={20} className="text-blue-600" />
-                <div className="text-left">
-                  <p className="font-medium text-sm text-pos-dark">Card / Bank</p>
-                  <p className="text-xs text-gray-500">Paystack secure</p>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("MTN_MOMO")}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
-                  paymentMethod === "MTN_MOMO"
-                    ? "border-pos-blue bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <Smartphone size={20} className="text-yellow-600" />
-                <div className="text-left">
-                  <p className="font-medium text-sm text-pos-dark">MTN MoMo</p>
-                  <p className="text-xs text-gray-500">USSD prompt</p>
-                </div>
-              </button>
-            </div>
-
-            {/* MoMo Phone Input */}
-            {paymentMethod === "MTN_MOMO" && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  MTN MoMo Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={momoPhone}
-                  onChange={(e) => setMomoPhone(e.target.value)}
-                  placeholder="e.g. 024XXXXXXX"
-                  className="input-field w-full"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  You will receive a USSD prompt on your phone to confirm payment.
-                </p>
-              </div>
-            )}
-
-            {/* OTP Input */}
-            {otpRequired && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter OTP
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="Enter OTP from your phone"
-                    className="input-field flex-1"
-                  />
-                  <button
-                    onClick={handleVerifyOtp}
-                    disabled={loading}
-                    className="btn-primary whitespace-nowrap"
-                  >
-                    {loading ? <Loader size={16} className="animate-spin" /> : "Verify"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         <div className="mt-6 flex gap-3">
           <button
             onClick={handleSubscribe}
@@ -350,6 +216,14 @@ export default function Billing() {
               Cancel Subscription
             </button>
           )}
+        </div>
+
+        {/* Payment Info */}
+        <div className="mt-4 p-3 bg-blue-50 rounded-xl">
+          <p className="text-sm text-blue-700 flex items-center gap-2">
+            <CreditCard size={16} />
+            You'll be redirected to Paystack to complete payment. Supports MTN MoMo, Cards, and Bank Transfer.
+          </p>
         </div>
       </div>
 

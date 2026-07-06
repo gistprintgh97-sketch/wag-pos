@@ -44,7 +44,7 @@ router.get("/info", extractTenant, protect, adminOnly, async (req, res) => {
 // ─── INITIATE SUBSCRIPTION PAYMENT ─────────────
 router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) => {
   try {
-    const { plan, billingCycle, paymentMethod = "PAYSTACK" } = req.body;
+    const { plan, billingCycle } = req.body;
 
     if (!PLANS[plan]) {
       return res.status(400).json({ message: "Invalid plan selected" });
@@ -58,7 +58,7 @@ router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) =>
     const amount = billingCycle === "YEARLY" ? PLANS[plan].yearly : PLANS[plan].monthly;
 
     if (amount === 0) {
-      // Free plan - just update subscription
+      // Free plan
       await prisma.subscription.update({
         where: { tenantId: req.tenant.id },
         data: {
@@ -85,77 +85,17 @@ router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) =>
       return res.json({ message: "Subscribed to free plan successfully" });
     }
 
-    // Handle MoMo payment
-    if (paymentMethod === "MTN_MOMO") {
-      // For MoMo, we need to use Paystack's charge endpoint with mobile_money
-      const { momoPhone } = req.body;
-
-      if (!momoPhone) {
-        return res.status(400).json({ message: "MoMo phone number is required" });
-      }
-
-      // Initialize Paystack charge with mobile money
-      const charge = await paystack.charge({
-        email: tenant.email,
-        amount: amount * 100, // Paystack expects amount in pesewas
-        currency: "GHS",
-        mobile_money: {
-          phone: momoPhone,
-          provider: "mtn"
-        },
-        metadata: {
-          tenantId: tenant.id,
-          plan,
-          billingCycle,
-          type: "subscription",
-          paymentMethod: "MTN_MOMO"
-        }
-      });
-
-      if (charge.data.status === "send_otp") {
-        // Paystack requires OTP verification
-        return res.json({
-          message: "OTP sent to your phone. Please verify.",
-          reference: charge.data.reference,
-          requiresOtp: true
-        });
-      }
-
-      // If direct charge succeeded
-      if (charge.data.status === "success") {
-        // Activate subscription immediately
-        await activateSubscription(tenant.id, plan, billingCycle, amount, charge.data.reference, "MTN_MOMO");
-
-        await logActivity({
-          tenantId: tenant.id,
-          action: 'SUBSCRIPTION_UPGRADE',
-          metadata: { plan: plan, amount: amount, method: 'MTN_MOMO' },
-          req,
-        });
-
-        return res.json({
-          message: "Payment successful! Subscription activated.",
-          success: true
-        });
-      }
-
-      return res.json({
-        message: "Payment initiated",
-        reference: charge.data.reference,
-        status: charge.data.status
-      });
-    }
-
-    // Default: Paystack card/standard payment
+    // Use Paystack standard checkout — handles Card, MoMo, Bank Transfer automatically
     const transaction = await paystack.initializeTransaction({
       email: tenant.email,
-      amount: amount * 100,
+      amount: amount * 100, // Paystack expects pesewas
       metadata: {
         tenantId: tenant.id,
         plan,
         billingCycle,
         type: "subscription"
-      }
+      },
+      channels: ["card", "mobile_money"] // Enable both card and MoMo
     });
 
     res.json({

@@ -150,8 +150,38 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ message: "Account suspended. Contact support." });
     }
 
-    if (tenant.status === "CANCELLED") {
-      return res.status(403).json({ message: "Account cancelled. Please renew." });
+        if (tenant.status === "CANCELLED") {
+      // Allow login but flag as cancelled — frontend will redirect to billing
+      const token = jwt.sign(
+        { id: user.id, name: user.name, role: user.role, tenantId: tenant.id, status: "CANCELLED" },
+        process.env.JWT_SECRET,
+        { expiresIn: "8h" }
+      );
+
+      await logActivity({
+        tenantId: tenant.id,
+        userId: user.id,
+        action: 'USER_LOGIN_CANCELLED',
+        metadata: { role: user.role, name: user.name },
+        req,
+      });
+
+      return res.json({
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        tenant: {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          status: tenant.status,
+          trialEndsAt: tenant.trialEndsAt,
+          subscription: tenant.subscription
+        },
+        token,
+        cancelled: true,
+        message: "Your subscription has been cancelled. Please renew to continue."
+      });
     }
 
     const user = await prisma.user.findFirst({

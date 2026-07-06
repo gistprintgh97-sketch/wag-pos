@@ -1,350 +1,355 @@
-// frontend/src/pages/Dashboard.jsx
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 import { useApi } from "../hooks/useApi";
 import API from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
-import Modal from "../components/Modal";
-import {
-  ShoppingCart,
-  TrendingUp,
-  DollarSign,
+import { 
+  DollarSign, 
+  ShoppingBag, 
+  Users, 
   Package,
-  AlertTriangle,
-  Search,
-  Plus,
-  History,
-  Crown,
-  Users
+  TrendingUp,
+  Calendar,
+  ArrowRight,
+  Receipt,
+  X,
+  User
 } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, tenant } = useAuth();
-  const { theme } = useTheme();
-  const navigate = useNavigate();
-  const { execute } = useApi();
-  const [products, setProducts] = useState([]);
-  const [report, setReport] = useState({});
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [showSalesHistory, setShowSalesHistory] = useState(false);
-  const [salesHistory, setSalesHistory] = useState([]);
-  const [lowStock, setLowStock] = useState([]);
+  const { tenant } = useAuth();
+  const { execute, loading } = useApi();
+  const [stats, setStats] = useState(null);
+  const [recentSales, setRecentSales] = useState([]);
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [showSaleDetail, setShowSaleDetail] = useState(false);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
 
-  const isTrial = tenant?.status === "TRIAL";
-  const trialDaysLeft = tenant?.trialEndsAt
-    ? Math.ceil((new Date(tenant.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24))
-    : 0;
+  const fetchDashboard = async () => {
+    const result = await execute(() => API.get("/reports/dashboard"), { showError: true });
+    if (result.success) {
+      setStats(result.data);
+    }
+  };
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [productsRes, reportRes] = await Promise.all([
-        API.get("/products"),
-        API.get("/reports")
-      ]);
-      setProducts(productsRes.data);
-      setReport(reportRes.data);
-      setLowStock(reportRes.data.lowStock || []);
-    } catch (error) {
-      console.error("Dashboard fetch error:", error);
-    } finally {
-      setLoading(false);
+  const fetchRecentSales = async () => {
+    const result = await execute(() => API.get("/sales/history?limit=5"), { showError: false });
+    if (result.success) {
+      setRecentSales(result.data.slice(0, 5));
+    }
+  };
+
+  const fetchLowStock = async () => {
+    const result = await execute(() => API.get("/products/low-stock"), { showError: false });
+    if (result.success) {
+      setLowStockProducts(result.data);
     }
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    fetchDashboard();
+    fetchRecentSales();
+    fetchLowStock();
   }, []);
 
-  const handleShowSalesHistory = async () => {
-    const result = await execute(() => API.get("/sales?limit=10"), { showError: true });
-    if (result.success) {
-      setSalesHistory(result.data.sales || []);
-      setShowSalesHistory(true);
-    }
+  const viewSaleDetail = (sale) => {
+    setSelectedSale(sale);
+    setShowSaleDetail(true);
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(search.toLowerCase())
+  const StatCard = ({ icon: Icon, label, value, color, onClick, clickable }) => (
+    <div 
+      onClick={onClick}
+      className={`card flex items-center gap-4 ${clickable ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+    >
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+        <Icon size={24} />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-pos-dark">{value}</p>
+        <p className="text-sm text-gray-500">{label}</p>
+      </div>
+      {clickable && <ArrowRight size={16} className="text-gray-400 ml-auto" />}
+    </div>
   );
 
-  const stats = [
-    {
-      title: "Total Sales",
-      value: report.today?.totalSales || 0,
-      subtitle: "Today",
-      icon: ShoppingCart,
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-600"
-    },
-    {
-      title: "Revenue",
-      value: `GHS ${(report.today?.revenue || 0).toFixed(2)}`,
-      subtitle: "Today",
-      icon: TrendingUp,
-      bgColor: "bg-green-50",
-      textColor: "text-green-600"
-    },
-    {
-      title: "Profit",
-      value: `GHS ${(report.today?.profit || 0).toFixed(2)}`,
-      subtitle: "Today",
-      icon: DollarSign,
-      bgColor: "bg-orange-50",
-      textColor: "text-orange-600"
-    }
-  ];
-
-  if (loading) return <LoadingSpinner fullScreen />;
+  if (loading && !stats) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Trial Banner */}
-      {isTrial && (
-        <div className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown size={24} />
-              <div>
-                <p className="font-bold">Free Trial Active</p>
-                <p className="text-sm opacity-90">
-                  {trialDaysLeft > 0
-                    ? `${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left`
-                    : "Trial ending soon"}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate("/billing")}
-              className="bg-white text-orange-600 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors"
-            >
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">{tenant?.name || "Dashboard"}</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Logged in as: <span className="font-semibold text-blue-600">{user?.name}</span>
-            {user?.role === "ADMIN" && (
-              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
-                <Crown size={10} /> Admin
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          {user?.role === "ADMIN" && (
-            <button
-              onClick={() => navigate("/products")}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <Plus size={18} />
-              Add Product
-            </button>
-          )}
-          <button
-            onClick={handleShowSalesHistory}
-            className="bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-          >
-            <History size={18} />
-            Sales History
-          </button>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-pos-dark">Dashboard</h1>
+        <p className="text-gray-500 mt-1">Welcome back, {tenant?.name}</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.title} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-              <div className={`w-14 h-14 ${stat.bgColor} rounded-2xl flex items-center justify-center ${stat.textColor}`}>
-                <Icon size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 font-medium">{stat.title}</p>
-                <p className="text-2xl font-bold text-slate-800 mt-0.5">{stat.value}</p>
-                <p className={`text-xs font-medium ${stat.textColor} mt-1`}>{stat.subtitle}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Low Stock Alert */}
-      {lowStock.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertTriangle size={20} className="text-amber-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-semibold text-amber-800">Low Stock Alert</p>
-            <p className="text-sm text-amber-700 mt-1">
-              {lowStock.length} product(s) running low: {lowStock.map(p => p.name).join(", ")}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
-        <Search size={20} className="text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 outline-none text-slate-700 placeholder-slate-400 bg-transparent"
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard 
+          icon={DollarSign} 
+          label="Today's Sales" 
+          value={`GHS ${stats?.todaySales?.toFixed(2) || "0.00"}`}
+          color="bg-green-100 text-green-600"
+          clickable={true}
+          onClick={() => {
+            // Fetch all today's sales and show detail
+            execute(() => API.get("/sales/history?today=true"), { showError: true })
+              .then(res => {
+                if (res.success && res.data.length > 0) {
+                  setSelectedSale({
+                    id: "TODAY",
+                    items: res.data.flatMap(s => s.items || []),
+                    total: res.data.reduce((sum, s) => sum + s.total, 0),
+                    createdAt: new Date(),
+                    cashier: { name: "Multiple Staff" },
+                    paymentMethod: "Mixed",
+                    isAggregate: true,
+                    sales: res.data
+                  });
+                  setShowSaleDetail(true);
+                }
+              });
+          }}
+        />
+        <StatCard 
+          icon={ShoppingBag} 
+          label="Total Sales" 
+          value={stats?.totalSales || 0}
+          color="bg-blue-100 text-blue-600"
+          clickable={true}
+          onClick={() => {
+            execute(() => API.get("/sales/history"), { showError: true })
+              .then(res => {
+                if (res.success && res.data.length > 0) {
+                  setSelectedSale({
+                    id: "ALL",
+                    items: res.data.flatMap(s => s.items || []),
+                    total: res.data.reduce((sum, s) => sum + s.total, 0),
+                    createdAt: new Date(),
+                    cashier: { name: "All Staff" },
+                    paymentMethod: "Mixed",
+                    isAggregate: true,
+                    sales: res.data
+                  });
+                  setShowSaleDetail(true);
+                }
+              });
+          }}
+        />
+        <StatCard 
+          icon={Package} 
+          label="Products" 
+          value={stats?.totalProducts || 0}
+          color="bg-purple-100 text-purple-600"
+        />
+        <StatCard 
+          icon={Users} 
+          label="Staff" 
+          value={stats?.totalUsers || 0}
+          color="bg-amber-100 text-amber-600"
         />
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} onUpdate={fetchData} />
-        ))}
-      </div>
-
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-12 text-slate-400">
-          <Package size={48} className="mx-auto mb-3 opacity-50" />
-          <p>No products found</p>
+      {/* Recent Sales with Itemized Detail */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-pos-dark">Recent Sales</h2>
+          <span className="text-sm text-gray-500">Click any sale for details</span>
         </div>
-      )}
 
-      {/* Footer */}
-      <div className="text-center text-sm text-slate-400 pt-4">
-        © 2025 WAG POS System. All rights reserved.
-      </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Receipt</th>
+                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Staff</th>
+                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Items</th>
+                <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Payment</th>
+                <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentSales.map(sale => (
+                <tr 
+                  key={sale.id} 
+                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => viewSaleDetail(sale)}
+                >
+                  <td className="py-2 px-3">
+                    <span className="font-mono text-sm text-pos-blue">#{sale.id?.toString().padStart(6, '0')}</span>
+                  </td>
+                  <td className="py-2 px-3">
+                    <div className="flex items-center gap-1">
+                      <User size={12} className="text-gray-400" />
+                      <span className="text-sm text-gray-700">{sale.cashier?.name || "Unknown"}</span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 text-sm text-gray-600">{sale.items?.length || 0} items</td>
+                  <td className="py-2 px-3">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      sale.paymentMethod === "Cash" ? "bg-green-100 text-green-700" :
+                      sale.paymentMethod === "MTN_MOMO" ? "bg-yellow-100 text-yellow-700" :
+                      "bg-blue-100 text-blue-700"
+                    }`}>
+                      {sale.paymentMethod}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3 text-right font-bold text-pos-dark">
+                    GHS {sale.total?.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      {/* Sales History Modal */}
-      <Modal
-        isOpen={showSalesHistory}
-        onClose={() => setShowSalesHistory(false)}
-        title="Sales History"
-        maxWidth="2xl"
-      >
-        <SalesHistoryTable sales={salesHistory} />
-      </Modal>
-    </div>
-  );
-}
-
-function ProductCard({ product, onUpdate }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { execute } = useApi();
-  const [showActions, setShowActions] = useState(false);
-
-  const isLowStock = product.stock <= 10;
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center hover:shadow-md transition-shadow">
-      <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-500 font-bold text-xl">
-        {product.name.substring(0, 2).toUpperCase()}
-      </div>
-      <h3 className="font-bold text-slate-800 mb-1">{product.name}</h3>
-      <p className="text-xl font-bold text-blue-600 mb-1">GHS {product.price.toFixed(2)}</p>
-      <p className={`text-sm font-medium mb-4 ${isLowStock ? "text-red-500" : "text-slate-500"}`}>
-        Stock: {product.stock}
-      </p>
-      <div className="space-y-2">
-        <button
-          onClick={() => navigate("/sales")}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-        >
-          <ShoppingCart size={16} />
-          Add to Cart
-        </button>
-
-        {user?.role === "ADMIN" && (
-          <button
-            onClick={() => setShowActions(!showActions)}
-            className="w-full py-2 text-sm text-slate-500 hover:text-slate-700 font-medium"
-          >
-            {showActions ? "Hide Actions" : "Manage"}
-          </button>
-        )}
-
-        {showActions && user?.role === "ADMIN" && (
-          <div className="space-y-2 pt-2 border-t border-slate-100">
-            <button
-              onClick={() => navigate("/products")}
-              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Edit Product
-            </button>
-            <button
-              onClick={async () => {
-                const qty = prompt("Enter restock quantity:");
-                if (!qty || isNaN(qty)) return;
-                const result = await execute(() =>
-                  API.put(`/products/restock/${product.id}`, { quantity: parseInt(qty) }),
-                  { successMessage: "Restocked successfully!" }
-                );
-                if (result.success) onUpdate();
-              }}
-              className="w-full py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Restock
-            </button>
+        {recentSales.length === 0 && (
+          <div className="text-center py-8 text-gray-400">
+            <Receipt size={48} className="mx-auto mb-3 opacity-30" />
+            <p>No sales yet today</p>
           </div>
         )}
       </div>
-    </div>
-  );
-}
 
-function SalesHistoryTable({ sales }) {
-  if (sales.length === 0) {
-    return (
-      <div className="text-center py-8 text-slate-400">
-        <History size={40} className="mx-auto mb-2" />
-        <p>No sales recorded yet</p>
-      </div>
-    );
-  }
+      {/* Low Stock Alerts */}
+      {lowStockProducts.length > 0 && (
+        <div className="card border-l-4 border-red-400">
+          <h2 className="text-lg font-bold text-pos-dark mb-3 flex items-center gap-2">
+            <TrendingUp size={20} className="text-red-500" />
+            Low Stock Alert
+          </h2>
+          <div className="space-y-2">
+            {lowStockProducts.map(product => (
+              <div key={product.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                <div>
+                  <p className="font-medium text-pos-dark">{product.name}</p>
+                  <p className="text-sm text-red-600">Only {product.stock} left</p>
+                </div>
+                <span className="text-sm font-bold text-red-600">Restock</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-slate-200">
-            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">ID</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Amount</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Payment</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sales.map((sale) => (
-            <tr key={sale.id} className="border-b border-slate-100 hover:bg-slate-50">
-              <td className="py-3 px-4 font-medium text-slate-800">#{sale.id}</td>
-              <td className="py-3 px-4 font-bold text-emerald-600">GHS {sale.total?.toFixed(2)}</td>
-              <td className="py-3 px-4">
-                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  sale.paymentMethod === "Cash" ? "bg-green-100 text-green-700" :
-                  sale.paymentMethod === "Mobile Money" ? "bg-blue-100 text-blue-700" :
-                  "bg-amber-100 text-amber-700"
-                }`}>
-                  {sale.paymentMethod}
+      {/* Sale Detail Modal */}
+      {showSaleDetail && selectedSale && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-pos-dark flex items-center gap-2">
+                <Receipt size={20} className="text-pos-blue" />
+                {selectedSale.isAggregate ? "Sales Breakdown" : "Receipt Details"}
+              </h2>
+              <button 
+                onClick={() => setShowSaleDetail(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Header Info */}
+              <div className="text-center border-b border-dashed border-gray-300 pb-4">
+                <h3 className="font-bold text-xl text-pos-dark">{tenant?.name}</h3>
+                {!selectedSale.isAggregate && (
+                  <p className="text-sm text-gray-500">Receipt #{selectedSale.id?.toString().padStart(6, '0')}</p>
+                )}
+                <p className="text-sm text-gray-500">
+                  {selectedSale.isAggregate 
+                    ? `${selectedSale.sales?.length || 0} transactions`
+                    : new Date(selectedSale.createdAt).toLocaleString()
+                  }
+                </p>
+              </div>
+
+              {/* Staff Info */}
+              <div className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-xl">
+                <span className="text-gray-500 flex items-center gap-1">
+                  <User size={14} />
+                  Processed by
                 </span>
-              </td>
-              <td className="py-3 px-4 text-sm text-slate-600">
-                {new Date(sale.createdAt).toLocaleString()}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <span className="font-medium text-pos-dark">{selectedSale.cashier?.name || "Unknown"}</span>
+              </div>
+
+              {/* Itemized List */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Items Sold</h4>
+
+                {selectedSale.isAggregate ? (
+                  // Show aggregated items
+                  Object.values(
+                    selectedSale.items.reduce((acc, item) => {
+                      const name = item.product?.name || item.name || "Unknown";
+                      if (!acc[name]) {
+                        acc[name] = { ...item, name, totalQuantity: 0, totalPrice: 0 };
+                      }
+                      acc[name].totalQuantity += item.quantity;
+                      acc[name].totalPrice += item.quantity * item.price;
+                      return acc;
+                    }, {})
+                  ).map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <div className="flex-1">
+                        <p className="font-medium text-pos-dark">{item.name}</p>
+                        <p className="text-xs text-gray-500">{item.totalQuantity} x GHS {item.price?.toFixed(2)}</p>
+                      </div>
+                      <span className="font-semibold text-pos-dark">GHS {item.totalPrice?.toFixed(2)}</span>
+                    </div>
+                  ))
+                ) : (
+                  // Show individual sale items
+                  selectedSale.items?.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <div className="flex-1">
+                        <p className="font-medium text-pos-dark">{item.product?.name || item.name}</p>
+                        <p className="text-xs text-gray-500">{item.quantity} x GHS {item.price?.toFixed(2)}</p>
+                      </div>
+                      <span className="font-semibold text-pos-dark">GHS {(item.quantity * item.price)?.toFixed(2)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Totals */}
+              <div className="border-t border-dashed border-gray-300 pt-4 space-y-2">
+                <div className="flex justify-between text-lg font-bold">
+                  <span className="text-pos-dark">Total</span>
+                  <span className="text-pos-blue">GHS {selectedSale.total?.toFixed(2)}</span>
+                </div>
+                {!selectedSale.isAggregate && (
+                  <div className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-xl">
+                    <span className="text-gray-500">Payment Method</span>
+                    <span className="font-medium">{selectedSale.paymentMethod}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Individual Sales List (for aggregate view) */}
+              {selectedSale.isAggregate && selectedSale.sales && (
+                <div className="mt-4">
+                  <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-2">Individual Transactions</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {selectedSale.sales.map((sale, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg text-sm">
+                        <div>
+                          <span className="font-mono text-pos-blue">#{sale.id?.toString().padStart(6, '0')}</span>
+                          <span className="text-gray-500 ml-2">by {sale.cashier?.name}</span>
+                        </div>
+                        <span className="font-medium">GHS {sale.total?.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-center text-xs text-gray-400 pt-2">
+                Thank you for shopping with us!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

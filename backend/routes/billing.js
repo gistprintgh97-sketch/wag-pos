@@ -44,7 +44,7 @@ router.get("/info", extractTenant, protect, adminOnly, async (req, res) => {
 // ─── INITIATE SUBSCRIPTION PAYMENT ─────────────
 router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) => {
   try {
-    const { plan, billingCycle } = req.body;
+    const { plan, billingCycle, paymentMethod = "PAYSTACK" } = req.body;
 
     if (!PLANS[plan]) {
       return res.status(400).json({ message: "Invalid plan selected" });
@@ -85,10 +85,71 @@ router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) =>
       return res.json({ message: "Subscribed to free plan successfully" });
     }
 
-    // Initialize Paystack transaction
+    // Handle MoMo payment
+    if (paymentMethod === "MTN_MOMO") {
+      // For MoMo, we need to use Paystack's charge endpoint with mobile_money
+      const { momoPhone } = req.body;
+
+      if (!momoPhone) {
+        return res.status(400).json({ message: "MoMo phone number is required" });
+      }
+
+      // Initialize Paystack charge with mobile money
+      const charge = await paystack.charge({
+        email: tenant.email,
+        amount: amount * 100, // Paystack expects amount in pesewas
+        currency: "GHS",
+        mobile_money: {
+          phone: momoPhone,
+          provider: "mtn"
+        },
+        metadata: {
+          tenantId: tenant.id,
+          plan,
+          billingCycle,
+          type: "subscription",
+          paymentMethod: "MTN_MOMO"
+        }
+      });
+
+      if (charge.data.status === "send_otp") {
+        // Paystack requires OTP verification
+        return res.json({
+          message: "OTP sent to your phone. Please verify.",
+          reference: charge.data.reference,
+          requiresOtp: true
+        });
+      }
+
+      // If direct charge succeeded
+      if (charge.data.status === "success") {
+        // Activate subscription immediately
+        await activateSubscription(tenant.id, plan, billingCycle, amount, charge.data.reference, "MTN_MOMO");
+
+        await logActivity({
+          tenantId: tenant.id,
+          action: 'SUBSCRIPTION_UPGRADE',
+          metadata: { plan: plan, amount: amount, method: 'MTN_MOMO' },
+          req,
+        });
+
+        return res.json({
+          message: "Payment successful! Subscription activated.",
+          success: true
+        });
+      }
+
+      return res.json({
+        message: "Payment initiated",
+        reference: charge.data.reference,
+        status: charge.data.status
+      });
+    }
+
+    // Default: Paystack card/standard payment
     const transaction = await paystack.initializeTransaction({
       email: tenant.email,
-      amount: amount * 100, // Paystack expects amount in pesewas
+      amount: amount * 100,
       metadata: {
         tenantId: tenant.id,
         plan,
@@ -104,7 +165,52 @@ router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) =>
     });
   } catch (error) {
     console.error("Subscribe error:", error);
-    res.status(500).json({ message: "Failed to initiate subscription" });
+    res.status(500).json({ message: "Failed to initiate subscription: " + error.message });
+  }
+});
+
+// ─── VERIFY OTP FOR MoMo ───────────────────────
+router.post("/verify-otp", extractTenant, protect, adminOnly, async (req, res) => {
+  try {
+    const { reference, otp } = req.body;
+
+    if (!reference || !otp) {
+      return res.status(400).json({ message: "Reference and OTP are required" });
+    }
+
+    // Submit OTP to Paystack
+    const result = await paystack.submitOtp({
+      reference,
+      otp
+    });
+
+    if (result.data.status === "success") {
+      const metadata = result.data.metadata || {};
+      const { plan, billingCycle } = metadata;
+      const amount = result.data.amount / 100;
+
+      await activateSubscription(req.tenant.id, plan, billingCycle, amount, reference, "MTN_MOMO");
+
+      await logActivity({
+        tenantId: req.tenant.id,
+        action: 'SUBSCRIPTION_UPGRADE',
+        metadata: { plan: plan, amount: amount, method: 'MTN_MOMO' },
+        req,
+      });
+
+      return res.json({
+        message: "Payment verified! Subscription activated.",
+        success: true
+      });
+    }
+
+    res.json({
+      message: "OTP verification status: " + result.data.status,
+      status: result.data.status
+    });
+  } catch (error) {
+    console.error("OTP verify error:", error);
+    res.status(500).json({ message: "Failed to verify OTP: " + error.message });
   }
 });
 
@@ -128,53 +234,15 @@ router.post("/verify", extractTenant, protect, adminOnly, async (req, res) => {
 
     const metadata = verification.data.metadata || {};
     const { plan, billingCycle } = metadata;
+    const amount = verification.data.amount / 100;
 
-    const periodEnd = new Date();
-    if (billingCycle === "YEARLY") {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    } else {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    }
+    await activateSubscription(req.tenant.id, plan, billingCycle, amount, reference, "PAYSTACK");
 
-    // Update subscription
-    await prisma.subscription.update({
-      where: { tenantId: req.tenant.id },
-      data: {
-        plan: plan || "BASIC",
-        status: "ACTIVE",
-        billingCycle: billingCycle || "MONTHLY",
-        priceMonthly: PLANS[plan]?.monthly || 149,
-        priceYearly: PLANS[plan]?.yearly || 1520,
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: periodEnd
-      }
-    });
-
-    // Record payment
-    await prisma.payment.create({
-      data: {
-        tenantId: req.tenant.id,
-        amount: verification.data.amount / 100,
-        currency: verification.data.currency || "GHS",
-        status: "SUCCESS",
-        method: "PAYSTACK",
-        paystackRef: reference,
-        description: `Subscription payment - ${plan} (${billingCycle})`
-      }
-    });
-
-    // Log activity
     await logActivity({
       tenantId: req.tenant.id,
       action: 'SUBSCRIPTION_UPGRADE',
-      metadata: { plan: plan, amount: verification.data.amount / 100, method: 'PAYSTACK' },
+      metadata: { plan: plan, amount: amount, method: 'PAYSTACK' },
       req,
-    });
-
-    // Activate tenant
-    await prisma.tenant.update({
-      where: { id: req.tenant.id },
-      data: { status: "ACTIVE" }
     });
 
     res.json({ message: "Subscription activated successfully!" });
@@ -214,5 +282,45 @@ router.post("/cancel", extractTenant, protect, adminOnly, async (req, res) => {
     res.status(500).json({ message: "Failed to cancel subscription" });
   }
 });
+
+// ─── HELPER: Activate Subscription ─────────────
+async function activateSubscription(tenantId, plan, billingCycle, amount, reference, method) {
+  const periodEnd = new Date();
+  if (billingCycle === "YEARLY") {
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+  } else {
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+  }
+
+  await prisma.subscription.update({
+    where: { tenantId },
+    data: {
+      plan: plan || "BASIC",
+      status: "ACTIVE",
+      billingCycle: billingCycle || "MONTHLY",
+      priceMonthly: PLANS[plan]?.monthly || 149,
+      priceYearly: PLANS[plan]?.yearly || 1520,
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: periodEnd
+    }
+  });
+
+  await prisma.payment.create({
+    data: {
+      tenantId,
+      amount,
+      currency: "GHS",
+      status: "SUCCESS",
+      method,
+      paystackRef: reference,
+      description: `Subscription payment - ${plan} (${billingCycle})`
+    }
+  });
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: { status: "ACTIVE" }
+  });
+}
 
 module.exports = router;

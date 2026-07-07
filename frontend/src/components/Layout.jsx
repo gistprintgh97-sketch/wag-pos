@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   ChevronDown,
   Moon,
-  Sun
+  Sun,
+  Receipt
 } from "lucide-react";
 
 export default function Layout() {
@@ -36,8 +37,9 @@ export default function Layout() {
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/sales", label: "New Sale", icon: ShoppingCart },
+    { path: "/new-sales", label: "New Sale", icon: ShoppingCart },
     { path: "/products", label: "Products", icon: Package },
+    { path: "/sales", label: "Sales History", icon: Receipt },
     { path: "/reports", label: "Reports", icon: BarChart3 },
   ];
 

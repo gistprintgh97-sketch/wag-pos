@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
+import NewSale from './pages/NewSale';
 import Sales from './pages/Sales';
 import Reports from './pages/Reports';
 import Users from './pages/Users';

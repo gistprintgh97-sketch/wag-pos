@@ -86,23 +86,34 @@ router.post("/subscribe", extractTenant, protect, adminOnly, async (req, res) =>
     }
 
     // Use Paystack standard checkout — handles Card, MoMo, Bank Transfer automatically
-    const transaction = await paystack.initializeTransaction({
-      email: tenant.email,
-      amount: amount * 100, // Paystack expects pesewas
-      metadata: {
-        tenantId: tenant.id,
-        plan,
-        billingCycle,
-        type: "subscription"
-      },
-      channels: ["card", "mobile_money"] // Enable both card and MoMo
-    });
+        try {
+      const transaction = await paystack.initializeTransaction({
+        email: tenant.email,
+        amount: amount * 100,
+        metadata: {
+          tenantId: tenant.id,
+          plan,
+          billingCycle,
+          type: "subscription"
+        },
+        channels: ["card", "mobile_money"]
+      });
 
-    res.json({
-      message: "Payment initiated",
-      authorizationUrl: transaction.data.authorization_url,
-      reference: transaction.data.reference
-    });
+      if (!transaction || !transaction.data) {
+        return res.status(500).json({ message: "Payment gateway error. Please try again or use a different payment method." });
+      }
+
+      res.json({
+        message: "Payment initiated",
+        authorizationUrl: transaction.data.authorization_url,
+        reference: transaction.data.reference
+      });
+    } catch (paystackError) {
+      console.error("Paystack error:", paystackError);
+      return res.status(500).json({ 
+        message: "Payment service temporarily unavailable. Please try Card payment or contact support." 
+      });
+    }
   } catch (error) {
     console.error("Subscribe error:", error);
     res.status(500).json({ message: "Failed to initiate subscription: " + error.message });

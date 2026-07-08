@@ -150,10 +150,11 @@ export default function NewSale() {
         </div>
       </div>
 
-         {/* Receipt Modal */}
+              {/* Receipt Modal */}
       {showReceipt && lastSale && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-lg font-bold text-pos-dark flex items-center gap-2">
                 <Receipt size={20} className="text-pos-blue" />
@@ -167,8 +168,8 @@ export default function NewSale() {
               </button>
             </div>
             
+            {/* Receipt Content */}
             <div className="p-6 space-y-4">
-              {/* Receipt Header */}
               <div className="text-center border-b border-dashed border-gray-300 pb-4">
                 <h3 className="font-bold text-xl text-pos-dark">{tenant?.name}</h3>
                 <p className="text-sm text-gray-500">Receipt #{lastSale.id?.toString().padStart(6, '0')}</p>
@@ -177,7 +178,6 @@ export default function NewSale() {
                 </p>
               </div>
               
-              {/* Items */}
               <div className="space-y-2">
                 {lastSale.items?.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-sm py-1">
@@ -187,7 +187,6 @@ export default function NewSale() {
                 ))}
               </div>
               
-              {/* Total */}
               <div className="border-t border-dashed border-gray-300 pt-4">
                 <div className="flex justify-between text-xl font-bold text-pos-dark">
                   <span>Total</span>
@@ -197,22 +196,21 @@ export default function NewSale() {
               </div>
             </div>
 
-            {/* Action Buttons - Bottom of receipt */}
+            {/* Action Buttons - Bottom */}
             <div className="border-t border-gray-100 p-4 bg-gray-50 rounded-b-2xl">
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => window.print()}
                   className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-all shadow-sm"
                 >
-                  <Printer size={16} className="text-gray-600" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                   Print
                 </button>
                 
                 <button
                   onClick={() => {
-                    const text = `*Receipt from ${tenant?.name}*\n\n${lastSale.items?.map(item => `${item.quantity}x ${item.product?.name || item.name} - GHS ${(item.quantity * item.price).toFixed(2)}`).join('\n')}\n\n*Total: GHS ${lastSale.total?.toFixed(2)}*\n\nThank you for shopping!`;
-                    const encoded = encodeURIComponent(text);
-                    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+                    const text = `*Receipt from ${tenant?.name}*%0A%0A${lastSale.items?.map(item => `${item.quantity}x ${item.product?.name || item.name} - GHS ${(item.quantity * item.price).toFixed(2)}`).join('%0A')}%0A%0A*Total: GHS ${lastSale.total?.toFixed(2)}*%0A%0AThank you for shopping!`;
+                    window.open(`https://wa.me/?text=${text}`, '_blank');
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-green-500 border border-green-600 rounded-lg text-sm font-medium text-white hover:bg-green-600 transition-all shadow-sm"
                 >
@@ -226,7 +224,7 @@ export default function NewSale() {
                   onClick={() => setShowReceipt(false)}
                   className="flex items-center gap-2 px-4 py-2 bg-pos-blue rounded-lg text-sm font-medium text-white hover:bg-blue-600 transition-all shadow-sm"
                 >
-                  <CheckCircle size={16} />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                   Done
                 </button>
               </div>

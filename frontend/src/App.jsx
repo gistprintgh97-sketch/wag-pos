@@ -30,6 +30,7 @@ function App() {
       {/* Protected dashboard routes */}
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/new-sale" element={<NewSale />} />
         <Route path="/products" element={<Products />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/reports" element={<Reports />} />

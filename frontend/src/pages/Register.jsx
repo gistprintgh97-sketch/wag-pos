@@ -47,7 +47,7 @@ export default function Register() {
     setLoading(false);
 
     if (result.success) {
-      navigate("/");
+    navigate("/login");
     } else {
       setError(result.message);
     }

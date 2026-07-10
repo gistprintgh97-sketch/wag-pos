@@ -14,7 +14,8 @@ import {
   ToggleLeft,
   ToggleRight,
   Crown,
-  Briefcase
+  Briefcase,
+  KeyRound
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -24,7 +25,10 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", pin: "", role: "CASHIER" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", pin: "", role: "CASHIER" });
+  
+  // PIN Reset state
+  const [resetModal, setResetModal] = useState({ open: false, userId: null, userName: "", newPin: "" });
 
   const fetchUsers = async () => {
     const result = await execute(() => API.get("/users"), { showError: false });
@@ -51,7 +55,7 @@ export default function UsersPage() {
     );
 
     if (result.success) {
-      setNewUser({ name: "", pin: "", role: "CASHIER" });
+      setNewUser({ name: "", email: "", pin: "", role: "CASHIER" });
       setShowAddModal(false);
       fetchUsers();
     }
@@ -76,6 +80,33 @@ export default function UsersPage() {
     if (result.success) fetchUsers();
   };
 
+  const openResetModal = (user) => {
+    if (user.id === currentUser?.id) {
+      toast.error("Use profile settings to change your own PIN");
+      return;
+    }
+    setResetModal({ open: true, userId: user.id, userName: user.name, newPin: "" });
+  };
+
+  const submitResetPin = async () => {
+    if (!resetModal.newPin || resetModal.newPin.length < 4) {
+      toast.error("PIN must be at least 4 digits");
+      return;
+    }
+
+    const result = await execute(
+      () => API.post("/users/reset-pin", {
+        userId: resetModal.userId,
+        newPin: resetModal.newPin
+      }),
+      { successMessage: `PIN reset for ${resetModal.userName}!` }
+    );
+
+    if (result.success) {
+      setResetModal({ open: false, userId: null, userName: "", newPin: "" });
+    }
+  };
+
   const filteredUsers = users.filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -90,6 +121,15 @@ export default function UsersPage() {
     if (role === "ADMIN") return "bg-amber-100 text-amber-700";
     if (role === "MANAGER") return "bg-blue-100 text-blue-700";
     return "bg-green-100 text-green-700";
+  };
+
+  const canManageUsers = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER";
+  const canResetPin = (targetUser) => {
+    // ADMIN can reset anyone except themselves
+    if (currentUser?.role === "ADMIN" && targetUser.id !== currentUser?.id) return true;
+    // MANAGER can reset CASHIER only
+    if (currentUser?.role === "MANAGER" && targetUser.role === "CASHIER") return true;
+    return false;
   };
 
   return (
@@ -146,6 +186,7 @@ export default function UsersPage() {
                       <div>
                         <p className="font-semibold text-pos-dark">{u.name}</p>
                         <p className="text-xs text-gray-400">ID: {u.id}</p>
+                        {u.email && <p className="text-xs text-gray-400">{u.email}</p>}
                       </div>
                     </div>
                   </td>
@@ -167,6 +208,17 @@ export default function UsersPage() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-2">
+                      {/* Reset PIN button */}
+                      {canResetPin(u) && (
+                        <button
+                          onClick={() => openResetModal(u)}
+                          className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors"
+                          title="Reset PIN"
+                        >
+                          <KeyRound size={16} />
+                        </button>
+                      )}
+                      
                       {currentUser?.role === "ADMIN" && u.id !== currentUser?.id && (
                         <>
                           <button
@@ -215,6 +267,16 @@ export default function UsersPage() {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+            <input
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value.toLowerCase().trim() })}
+              className="input-field"
+              placeholder="john@example.com"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">PIN (min 4 digits)</label>
             <input
               type="password"
@@ -242,6 +304,42 @@ export default function UsersPage() {
               Save User
             </button>
             <button onClick={() => setShowAddModal(false)} className="btn-danger flex-1">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset PIN Modal */}
+      <Modal isOpen={resetModal.open} onClose={() => setResetModal({ open: false, userId: null, userName: "", newPin: "" })} title={`Reset PIN for ${resetModal.userName}`}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New PIN (4-6 digits)</label>
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={resetModal.newPin}
+              onChange={(e) => setResetModal(prev => ({ ...prev, newPin: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+              className="input-field"
+              placeholder="Enter new PIN"
+              maxLength={6}
+              autoFocus
+            />
+            <p className="text-xs text-gray-400 mt-1">The user will need this PIN to log in.</p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={submitResetPin} 
+              disabled={resetModal.newPin.length < 4}
+              className="btn-primary flex-1 disabled:opacity-50"
+            >
+              Reset PIN
+            </button>
+            <button 
+              onClick={() => setResetModal({ open: false, userId: null, userName: "", newPin: "" })} 
+              className="btn-danger flex-1"
+            >
               Cancel
             </button>
           </div>

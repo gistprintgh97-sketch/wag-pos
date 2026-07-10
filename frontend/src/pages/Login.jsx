@@ -113,7 +113,17 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-slate-500">
+                    <div className="mt-4 text-center">
+            <button 
+              type="button"
+              onClick={() => navigate('/forgot-pin')}
+              className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+            >
+              Forgot your PIN?
+            </button>
+          </div>
+
+          <div className="mt-4 text-center text-sm text-slate-500">
             Don't have a shop?{" "}
             <Link to="/register" className="text-blue-400 font-semibold hover:text-blue-300 hover:underline">
               Create one

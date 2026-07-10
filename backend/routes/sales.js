@@ -6,35 +6,61 @@ const { extractTenant } = require("../middleware/tenant");
 const { logActivity } = require('../services/activityLogger');
 const prisma = new PrismaClient();
 
-// ─── GET SALES HISTORY (Itemized with Staff) ───────────────────
+// ─── GET SALES HISTORY (Paginated, ALL records by default) ───
 router.get("/history", extractTenant, protect, async (req, res) => {
   try {
-    const sales = await prisma.sale.findMany({
-      where: { tenantId: req.tenant.id },
-      orderBy: { createdAt: "desc" },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: { name: true }
-            }
-          }
-        },
-        cashier: {
-          select: { name: true, id: true }
-        }
-      },
-      take: 100
-    });
+    const { page = 1, limit = 100, startDate, endDate, today: todayFlag } = req.query;
+    
+    const where = { tenantId: req.tenant.id };
+    
+    // Optional: filter to today only
+    if (todayFlag === 'true') {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      where.createdAt = { gte: startOfDay, lte: endOfDay };
+    } 
+    // Optional: date range filter
+    else if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
 
-    res.json(sales);
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    const [sales, total] = await Promise.all([
+      prisma.sale.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: {
+            include: {
+              product: { select: { name: true } }
+            }
+          },
+          cashier: { select: { name: true, id: true } }
+        },
+        skip,
+        take
+      }),
+      prisma.sale.count({ where })
+    ]);
+
+    res.json({
+      sales,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / take)
+    });
   } catch (error) {
     console.error("Sales history error:", error);
     res.status(500).json({ message: "Failed to fetch sales history" });
   }
 });
 
-// ─── CREATE NEW SALE ───────────────────────────────────────────
+// ─── CREATE NEW SALE ───
 router.post("/", extractTenant, protect, async (req, res) => {
   try {
     const { items, paymentMethod, momoPhone } = req.body;
@@ -43,7 +69,6 @@ router.post("/", extractTenant, protect, async (req, res) => {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
-    // Calculate total and validate stock
     let total = 0;
     const saleItems = [];
 
@@ -70,9 +95,7 @@ router.post("/", extractTenant, protect, async (req, res) => {
       });
     }
 
-    // Create sale in transaction
     const sale = await prisma.$transaction(async (tx) => {
-      // Deduct stock
       for (const item of items) {
         await tx.product.update({
           where: { id: item.id },
@@ -80,7 +103,6 @@ router.post("/", extractTenant, protect, async (req, res) => {
         });
       }
 
-      // Create sale record
       const newSale = await tx.sale.create({
         data: {
           tenantId: req.tenant.id,
@@ -88,9 +110,7 @@ router.post("/", extractTenant, protect, async (req, res) => {
           paymentMethod: paymentMethod || "Cash",
           momoPhone: momoPhone || null,
           cashierId: req.user.id,
-          items: {
-            create: saleItems
-          }
+          items: { create: saleItems }
         },
         include: {
           items: {
@@ -105,7 +125,6 @@ router.post("/", extractTenant, protect, async (req, res) => {
       return newSale;
     });
 
-    // Log activity
     await logActivity({
       tenantId: req.tenant.id,
       userId: req.user.id,

@@ -9,6 +9,8 @@ import {
   User, 
   CreditCard, 
   Receipt,
+  ChevronLeft,
+  ChevronRight,
   X
 } from "lucide-react";
 
@@ -16,14 +18,23 @@ export default function Sales() {
   const { tenant } = useAuth();
   const { execute, loading } = useApi();
   const [sales, setSales] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedSale, setSelectedSale] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
 
-  const fetchSales = async () => {
+  const fetchSales = async (targetPage = 1) => {
     try {
-      const result = await execute(() => API.get("/sales/history"), { showError: true });
+      const result = await execute(
+        () => API.get(`/sales/history?page=${targetPage}&limit=50`), 
+        { showError: true }
+      );
       if (result.success && result.data) {
-        setSales(result.data);
+        setSales(result.data.sales || []);
+        setTotal(result.data.total || 0);
+        setPage(result.data.page || 1);
+        setTotalPages(result.data.totalPages || 1);
       }
     } catch (err) {
       console.error("Fetch sales error:", err);
@@ -31,7 +42,7 @@ export default function Sales() {
   };
 
   useEffect(() => {
-    fetchSales();
+    fetchSales(1);
   }, []);
 
   const viewSaleDetail = (sale) => {
@@ -136,6 +147,31 @@ export default function Sales() {
           <div className="text-center py-12 text-gray-400">
             <ShoppingCart size={48} className="mx-auto mb-3 opacity-30" />
             <p>No sales found</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 border-t border-gray-100">
+            <span className="text-sm text-gray-500">
+              Page {page} of {totalPages} ({total} records)
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fetchSales(page - 1)}
+                disabled={page <= 1}
+                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={() => fetchSales(page + 1)}
+                disabled={page >= totalPages}
+                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
         )}
       </div>

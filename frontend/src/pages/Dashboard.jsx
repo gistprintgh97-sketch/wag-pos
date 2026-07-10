@@ -35,14 +35,14 @@ export default function Dashboard() {
   const fetchRecentSales = async () => {
     const result = await execute(() => API.get("/sales/history?limit=5"), { showError: false });
     if (result.success) {
-      setRecentSales(result.data.slice(0, 5));
+      setRecentSales(result.data.sales?.slice(0, 5) || []);
     }
   };
 
   const fetchLowStock = async () => {
-    const result = await execute(() => API.get("/products/low-stock"), { showError: false });
+    const result = await execute(() => API.get("/reports/low-stock"), { showError: false });
     if (result.success) {
-      setLowStockProducts(result.data);
+      setLowStockProducts(result.data || []);
     }
   };
 
@@ -91,19 +91,18 @@ export default function Dashboard() {
           color="bg-green-100 text-green-600"
           clickable={true}
           onClick={() => {
-            // Fetch all today's sales and show detail
             execute(() => API.get("/sales/history?today=true"), { showError: true })
               .then(res => {
-                if (res.success && res.data.length > 0) {
+                if (res.success && res.data.sales?.length > 0) {
                   setSelectedSale({
                     id: "TODAY",
-                    items: res.data.flatMap(s => s.items || []),
-                    total: res.data.reduce((sum, s) => sum + s.total, 0),
+                    items: res.data.sales.flatMap(s => s.items || []),
+                    total: res.data.sales.reduce((sum, s) => sum + s.total, 0),
                     createdAt: new Date(),
                     cashier: { name: "Multiple Staff" },
                     paymentMethod: "Mixed",
                     isAggregate: true,
-                    sales: res.data
+                    sales: res.data.sales
                   });
                   setShowSaleDetail(true);
                 }
@@ -119,16 +118,16 @@ export default function Dashboard() {
           onClick={() => {
             execute(() => API.get("/sales/history"), { showError: true })
               .then(res => {
-                if (res.success && res.data.length > 0) {
+                if (res.success && res.data.sales?.length > 0) {
                   setSelectedSale({
                     id: "ALL",
-                    items: res.data.flatMap(s => s.items || []),
-                    total: res.data.reduce((sum, s) => sum + s.total, 0),
+                    items: res.data.sales.flatMap(s => s.items || []),
+                    total: res.data.sales.reduce((sum, s) => sum + s.total, 0),
                     createdAt: new Date(),
                     cashier: { name: "All Staff" },
                     paymentMethod: "Mixed",
                     isAggregate: true,
-                    sales: res.data
+                    sales: res.data.sales
                   });
                   setShowSaleDetail(true);
                 }
@@ -149,7 +148,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Recent Sales with Itemized Detail */}
+      {/* Recent Sales */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-pos-dark">Recent Sales</h2>
@@ -249,7 +248,6 @@ export default function Dashboard() {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Header Info */}
               <div className="text-center border-b border-dashed border-gray-300 pb-4">
                 <h3 className="font-bold text-xl text-pos-dark">{tenant?.name}</h3>
                 {!selectedSale.isAggregate && (
@@ -263,7 +261,6 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Staff Info */}
               <div className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-xl">
                 <span className="text-gray-500 flex items-center gap-1">
                   <User size={14} />
@@ -272,12 +269,10 @@ export default function Dashboard() {
                 <span className="font-medium text-pos-dark">{selectedSale.cashier?.name || "Unknown"}</span>
               </div>
 
-              {/* Itemized List */}
               <div className="space-y-2">
                 <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wide">Items Sold</h4>
 
                 {selectedSale.isAggregate ? (
-                  // Show aggregated items
                   Object.values(
                     selectedSale.items.reduce((acc, item) => {
                       const name = item.product?.name || item.name || "Unknown";
@@ -298,7 +293,6 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  // Show individual sale items
                   selectedSale.items?.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-100">
                       <div className="flex-1">
@@ -311,7 +305,6 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Totals */}
               <div className="border-t border-dashed border-gray-300 pt-4 space-y-2">
                 <div className="flex justify-between text-lg font-bold">
                   <span className="text-pos-dark">Total</span>
@@ -325,7 +318,6 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Individual Sales List (for aggregate view) */}
               {selectedSale.isAggregate && selectedSale.sales && (
                 <div className="mt-4">
                   <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wide mb-2">Individual Transactions</h4>
